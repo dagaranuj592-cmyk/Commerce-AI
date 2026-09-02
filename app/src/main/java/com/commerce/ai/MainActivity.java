@@ -3,10 +3,12 @@ package com.commerce.ai;
 import android.app.Activity;
 import android.os.Bundle;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
-import android.provider.Settings;
+import android.util.Base64;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -16,13 +18,26 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
 public class MainActivity extends Activity {
 
     private static final int PICK_IMAGE = 100;
 
+    // Vercel backend
+    private static final String API_URL =
+            "https://commerce-ai-seven.vercel.app/api/solve";
+
     private ImageView questionImage;
     private EditText questionInput;
     private TextView result;
+
+    private Uri selectedImageUri = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,39 +132,349 @@ public class MainActivity extends Activity {
 
         photoButton.setOnClickListener(view -> openPhotoPicker());
 
-        solveButton.setOnClickListener(view -> {
+        solveButton.setOnClickListener(view -> solveQuestion());
+    }
 
-            String question =
-                    questionInput.getText().toString().trim();
+    private void solveQuestion() {
 
-            if (question.isEmpty()
-                    && questionImage.getVisibility() == ImageView.GONE) {
+        String question =
+                questionInput.getText().toString().trim();
 
-                Toast.makeText(
-                        MainActivity.this,
-                        "Photo upload karo ya question type karo.",
-                        Toast.LENGTH_SHORT
-                ).show();
+        if (question.isEmpty() && selectedImageUri == null) {
 
-                return;
+            Toast.makeText(
+                    MainActivity.this,
+                    "Photo upload karo ya question type karo.",
+                    Toast.LENGTH_SHORT
+            ).show();
+
+            return;
+        }
+
+        result.setText("⏳ AI question solve kar raha hai...\n\nPlease wait...");
+
+        new Thread(() -> {
+
+            try {
+
+                String imageData = "";
+
+                if (selectedImageUri != null) {
+                    imageData = convertImageToBase64(selectedImageUri);
+                }
+
+                String json =
+                        "{"
+                                + "\"question\":\"" + escapeJson(question) + "\","
+                                + "\"image\":\"" + escapeJson(imageData) + "\""
+                                + "}";
+
+                URL url = new URL(API_URL);
+
+                HttpURLConnection connection =
+                        (HttpURLConnection) url.openConnection();
+
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty(
+                        "Content-Type",
+                        "application/json"
+                );
+                connection.setRequestProperty(
+                        "Accept",
+                        "application/json"
+                );
+
+                connection.setDoOutput(true);
+                connection.setConnectTimeout(30000);
+                connection.setReadTimeout(120000);
+
+                OutputStream outputStream =
+                        connection.getOutputStream();
+
+                outputStream.write(
+                        json.getBytes(StandardCharsets.UTF_8)
+                );
+
+                outputStream.flush();
+                outputStream.close();
+
+                int responseCode =
+                        connection.getResponseCode();
+
+                InputStream inputStream;
+
+                if (responseCode >= 200 && responseCode < 300) {
+                    inputStream = connection.getInputStream();
+                } else {
+                    inputStream = connection.getErrorStream();
+                }
+
+                String response =
+                        readStream(inputStream);
+
+                connection.disconnect();
+
+                String answer =
+                        extractJsonValue(response, "answer");
+
+                String error =
+                        extractJsonValue(response, "error");
+
+                runOnUiThread(() -> {
+
+                    if (responseCode >= 200
+                            && responseCode < 300
+                            && !answer.isEmpty()) {
+
+                        result.setText(answer);
+
+                    } else {
+
+                        if (error.isEmpty()) {
+                            error = "Server error. Response code: "
+                                    + responseCode;
+                        }
+
+                        result.setText(
+                                "❌ Error\n\n" + error
+                        );
+                    }
+                });
+
+            } catch (Exception e) {
+
+                runOnUiThread(() ->
+                        result.setText(
+                                "❌ Connection error\n\n"
+                                        + e.getMessage()
+                        )
+                );
             }
 
-            result.setText(
-                    "Question received!\n\n" +
-                    "AI solving system next step mein connect hoga.\n\n" +
-                    "Abhi photo upload aur question input working hai."
+        }).start();
+    }
+
+    private String convertImageToBase64(Uri uri)
+            throws Exception {
+
+        InputStream inputStream =
+                getContentResolver().openInputStream(uri);
+
+        Bitmap bitmap =
+                BitmapFactory.decodeStream(inputStream);
+
+        inputStream.close();
+
+        if (bitmap == null) {
+            throw new Exception("Image read nahi ho paayi.");
+        }
+
+        // Image ko chhota karke request size manageable rakhna
+        int maxSize = 1600;
+
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+
+        if (width > maxSize || height > maxSize) {
+
+            float scale =
+                    Math.min(
+                            (float) maxSize / width,
+                            (float) maxSize / height
+                    );
+
+            int newWidth =
+                    Math.round(width * scale);
+
+            int newHeight =
+                    Math.round(height * scale);
+
+            bitmap = Bitmap.createScaledBitmap(
+                    bitmap,
+                    newWidth,
+                    newHeight,
+                    true
             );
-        });
+        }
+
+        ByteArrayOutputStream output =
+                new ByteArrayOutputStream();
+
+        bitmap.compress(
+                Bitmap.CompressFormat.JPEG,
+                75,
+                output
+        );
+
+        bitmap.recycle();
+
+        byte[] bytes = output.toByteArray();
+
+        String base64 =
+                Base64.encodeToString(
+                        bytes,
+                        Base64.NO_WRAP
+                );
+
+        return "data:image/jpeg;base64," + base64;
+    }
+
+    private String escapeJson(String text) {
+
+        if (text == null) {
+            return "";
+        }
+
+        return text
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
+    }
+
+    private String readStream(InputStream inputStream)
+            throws Exception {
+
+        if (inputStream == null) {
+            return "";
+        }
+
+        ByteArrayOutputStream output =
+                new ByteArrayOutputStream();
+
+        byte[] buffer = new byte[4096];
+
+        int length;
+
+        while ((length = inputStream.read(buffer)) != -1) {
+
+            output.write(
+                    buffer,
+                    0,
+                    length
+            );
+        }
+
+        inputStream.close();
+
+        return output.toString(
+                StandardCharsets.UTF_8.name()
+        );
+    }
+
+    private String extractJsonValue(
+            String json,
+            String key) {
+
+        if (json == null || json.isEmpty()) {
+            return "";
+        }
+
+        String search =
+                "\"" + key + "\"";
+
+        int keyIndex =
+                json.indexOf(search);
+
+        if (keyIndex == -1) {
+            return "";
+        }
+
+        int colon =
+                json.indexOf(
+                        ":",
+                        keyIndex
+                );
+
+        if (colon == -1) {
+            return "";
+        }
+
+        int firstQuote =
+                json.indexOf(
+                        "\"",
+                        colon + 1
+                );
+
+        if (firstQuote == -1) {
+            return "";
+        }
+
+        StringBuilder value =
+                new StringBuilder();
+
+        boolean escaped = false;
+
+        for (int i = firstQuote + 1;
+             i < json.length();
+             i++) {
+
+            char c = json.charAt(i);
+
+            if (escaped) {
+
+                switch (c) {
+
+                    case 'n':
+                        value.append('\n');
+                        break;
+
+                    case 'r':
+                        value.append('\r');
+                        break;
+
+                    case 't':
+                        value.append('\t');
+                        break;
+
+                    case '"':
+                        value.append('"');
+                        break;
+
+                    case '\\':
+                        value.append('\\');
+                        break;
+
+                    default:
+                        value.append(c);
+                        break;
+                }
+
+                escaped = false;
+
+            } else if (c == '\\') {
+
+                escaped = true;
+
+            } else if (c == '"') {
+
+                break;
+
+            } else {
+
+                value.append(c);
+            }
+        }
+
+        return value.toString();
     }
 
     private void openPhotoPicker() {
 
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        Intent intent =
+                new Intent(Intent.ACTION_OPEN_DOCUMENT);
 
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.addCategory(
+                Intent.CATEGORY_OPENABLE
+        );
+
         intent.setType("image/*");
 
-        startActivityForResult(intent, PICK_IMAGE);
+        startActivityForResult(
+                intent,
+                PICK_IMAGE
+        );
     }
 
     @Override
@@ -172,8 +497,15 @@ public class MainActivity extends Activity {
 
             if (imageUri != null) {
 
-                questionImage.setImageURI(imageUri);
-                questionImage.setVisibility(ImageView.VISIBLE);
+                selectedImageUri = imageUri;
+
+                questionImage.setImageURI(
+                        imageUri
+                );
+
+                questionImage.setVisibility(
+                        ImageView.VISIBLE
+                );
 
                 Toast.makeText(
                         this,
