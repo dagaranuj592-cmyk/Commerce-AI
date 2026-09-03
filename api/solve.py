@@ -235,57 +235,61 @@ def extract_average_profit(text):
 def extract_historical_profits(text):
 
     """
-    Detects questions such as:
+    Detect historical profits from questions like:
 
-    profits for the last four years were
-    ₹3,20,000, ₹2,80,000, ₹3,60,000 and ₹4,00,000
+    The profits of the firm for the last four years were
+    ₹3,20,000, ₹2,80,000, ₹3,60,000 and ₹4,00,000.
     """
-
-    keywords = [
-        "profits for the last",
-        "profits of the last",
-        "profits for previous",
-        "profits of previous",
-        "profits for the past",
-        "profits of the past",
-        "profits were",
-        "profits are"
-    ]
 
     lower_text = text.lower()
 
-    if not any(
-        keyword in lower_text
-        for keyword in keywords
+    # Historical-profit question check
+    if not (
+        "profit" in lower_text
+        and (
+            "last" in lower_text
+            or "previous" in lower_text
+            or "past" in lower_text
+        )
     ):
-
         return []
 
-    numbers = extract_money_numbers(text)
+    # Find the part after "profits ... were/are"
+    match = re.search(
+        r"profits?.*?\b(?:were|are)\b(.*?)(?:\.|calculate|$)",
+        text,
+        re.IGNORECASE
+    )
 
-    # Remove obvious non-profit numbers
-    # such as years-purchase and percentages.
-    rate = extract_percentage(text)
-    years_purchase = extract_years_purchase(text)
+    if not match:
+        return []
 
-    filtered = []
+    profit_section = match.group(1)
 
-    for number in numbers:
+    # Extract only money-like numbers from profit section
+    matches = re.findall(
+        r"(?:₹\s*)?(\d{1,3}(?:,\d{2,3})*(?:\.\d+)?|\d+(?:\.\d+)?)",
+        profit_section
+    )
 
-        if rate is not None and number == rate:
-            continue
+    profits = []
 
-        if years_purchase is not None and number == years_purchase:
-            continue
+    for item in matches:
 
-        # Ignore very small standalone numbers
-        # that are unlikely to be profit amounts.
-        if number < 1000:
-            continue
+        try:
 
-        filtered.append(number)
+            value = float(
+                item.replace(",", "")
+            )
 
-    return filtered
+            if value >= 1000:
+                profits.append(value)
+
+        except Exception:
+
+            pass
+
+    return profits
 
 
 # ==========================================
