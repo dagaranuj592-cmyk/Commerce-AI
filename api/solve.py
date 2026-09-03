@@ -97,6 +97,7 @@ def find_formulas(question, database):
                     len(word) >= 4
                     and word in search_text
                 ):
+
                     score += 1
 
             if score > 0:
@@ -173,6 +174,7 @@ def detect_and_calculate(question):
 
     q = question.lower()
 
+
     # =================================
     # CURRENT RATIO
     # =================================
@@ -205,7 +207,10 @@ def detect_and_calculate(question):
             ]
         )
 
-        if assets is not None and liabilities is not None:
+        if (
+            assets is not None
+            and liabilities is not None
+        ):
 
             return calculate({
                 "type": "current_ratio",
@@ -568,7 +573,8 @@ def format_calculator_answer(result):
     lines = []
 
     lines.append(
-        "📚 " + result.get(
+        "📚 "
+        + result.get(
             "title",
             "Solution"
         )
@@ -585,27 +591,64 @@ def format_calculator_answer(result):
 
     lines.append("")
 
+    value = result.get(
+        "value"
+    )
+
+    # Ratio values should NOT have ₹
+    title = result.get(
+        "title",
+        ""
+    ).lower()
+
+    if "ratio" in title:
+
+        if isinstance(value, float):
+
+            if value.is_integer():
+
+                value_text = str(
+                    int(value)
+                )
+
+            else:
+
+                value_text = f"{value:.2f}".rstrip(
+                    "0"
+                ).rstrip(".")
+
+        else:
+
+            value_text = str(value)
+
+    else:
+
+        if isinstance(value, float):
+
+            if value.is_integer():
+
+                value_text = (
+                    "₹"
+                    + f"{int(value):,}"
+                )
+
+            else:
+
+                value_text = (
+                    "₹"
+                    + f"{value:,.2f}"
+                )
+
+        else:
+
+            value_text = str(value)
+
     lines.append(
         "✅ Final Answer: "
-        + format_value(
-            result.get("value")
-        )
+        + value_text
     )
 
     return "\n".join(lines)
-
-
-def format_value(value):
-
-    if isinstance(value, float):
-
-        if value.is_integer():
-
-            return "₹" + f"{int(value):,}"
-
-        return f"{value:,.2f}"
-
-    return str(value)
 
 
 # -----------------------------------
@@ -751,29 +794,30 @@ class handler(
 
                 self.send_header(
                     "Content-Type",
-                    "application/json"
+                    "application/json; charset=utf-8"
                 )
 
                 self.end_headers()
 
                 self.wfile.write(
-                    json.dumps({
-                        "success": False,
-                        "error": "Question ya photo required hai."
-                    }).encode("utf-8")
+                    json.dumps(
+                        {
+                            "success": False,
+                            "error": "Question ya photo required hai."
+                        },
+                        ensure_ascii=False
+                    ).encode("utf-8")
                 )
 
                 return
 
 
             # --------------------------------
-            # STEP 1: TRY OUR OWN CALCULATOR
+            # STEP 1:
+            # TRY OUR OWN CALCULATOR
             # --------------------------------
 
             calculator_result = None
-
-            # Calculator only works on typed text.
-            # Photos go to AI for image understanding.
 
             if question and not image:
 
@@ -785,7 +829,7 @@ class handler(
 
 
             # --------------------------------
-            # IF CALCULATOR SOLVED IT
+            # CALCULATOR SUCCESS
             # NO API CALL
             # --------------------------------
 
@@ -804,25 +848,29 @@ class handler(
 
                 self.send_header(
                     "Content-Type",
-                    "application/json"
+                    "application/json; charset=utf-8"
                 )
 
                 self.end_headers()
 
                 self.wfile.write(
-                    json.dumps({
-                        "success": True,
-                        "answer": answer,
-                        "source": "calculator",
-                        "api_used": False
-                    }).encode("utf-8")
+                    json.dumps(
+                        {
+                            "success": True,
+                            "answer": answer,
+                            "source": "calculator",
+                            "api_used": False
+                        },
+                        ensure_ascii=False
+                    ).encode("utf-8")
                 )
 
                 return
 
 
             # --------------------------------
-            # STEP 2: DATABASE FORMULA SEARCH
+            # STEP 2:
+            # SEARCH DATABASE
             # --------------------------------
 
             database = load_database()
@@ -834,7 +882,8 @@ class handler(
 
 
             # --------------------------------
-            # STEP 3: AI FALLBACK
+            # STEP 3:
+            # AI FALLBACK
             # --------------------------------
 
             answer = solve_with_ai(
@@ -848,21 +897,24 @@ class handler(
 
             self.send_header(
                 "Content-Type",
-                "application/json"
+                "application/json; charset=utf-8"
             )
 
             self.end_headers()
 
             self.wfile.write(
-                json.dumps({
-                    "success": True,
-                    "answer": answer,
-                    "source": "ai",
-                    "api_used": True,
-                    "database_matches": len(
-                        formula_matches
-                    )
-                }).encode("utf-8")
+                json.dumps(
+                    {
+                        "success": True,
+                        "answer": answer,
+                        "source": "ai",
+                        "api_used": True,
+                        "database_matches": len(
+                            formula_matches
+                        )
+                    },
+                    ensure_ascii=False
+                ).encode("utf-8")
             )
 
 
@@ -872,14 +924,17 @@ class handler(
 
             self.send_header(
                 "Content-Type",
-                "application/json"
+                "application/json; charset=utf-8"
             )
 
             self.end_headers()
 
             self.wfile.write(
-                json.dumps({
-                    "success": False,
-                    "error": str(e)
-                }).encode("utf-8")
-            )
+                json.dumps(
+                    {
+                        "success": False,
+                        "error": str(e)
+                    },
+                    ensure_ascii=False
+                ).encode("utf-8")
+    )
