@@ -1,136 +1,52 @@
 import os
 import re
-import ast
-import operator
-import math
 import json
+import ast
+import operator as op
 from http.server import BaseHTTPRequestHandler
 
+# =========================================================
+# COMMERCE AI - DETAILED ACCOUNTANCY SOLVER
+# =========================================================
 
-# ============================================================
-# COMMERCE AI - MASTER ACCOUNTANCY SOLVER
-# ============================================================
-# Local engine + AI fallback
-#
-# PARTNERSHIP
-# - Profit sharing ratio
-# - Average profit
-# - Weighted average profit
-# - Normal profit
-# - Super profit
-# - Goodwill
-# - Capitalisation method
-# - Interest on capital
-# - Interest on drawings
-# - Partner salary
-# - Partner commission
-# - Guarantee
-# - Admission
-# - Sacrificing ratio
-# - Retirement
-# - Gaining ratio
-# - Revaluation
-# - Past adjustment
-# - Dissolution
-#
-# COMPANY ACCOUNTS
-# - Share issue
-# - Premium
-# - Oversubscription
-# - Calls
-# - Forfeiture
-# - Reissue
-# - Debentures
-#
-# FINANCIAL RATIOS
-# - Current ratio
-# - Quick ratio
-# - Debt equity
-# - Total assets to debt
-# - Proprietary
-# - Interest coverage
-# - Debt to capital employed
-# - Inventory turnover
-# - Receivables turnover
-# - Payables turnover
-# - Fixed asset turnover
-# - Net asset turnover
-# - Working capital turnover
-# - Gross profit ratio
-# - Operating ratio
-# - Operating profit ratio
-# - Net profit ratio
-# - ROI
-#
-# CASH FLOW
-# - Basic indirect method
-# ============================================================
-
-
-# ============================================================
+# -------------------------
 # BASIC HELPERS
-# ============================================================
+# -------------------------
 
 def normalize(text):
     if not text:
         return ""
-
     text = str(text)
-
-    replacements = {
-        "₹": " rupees ",
-        "Rs.": " rupees ",
-        "Rs": " rupees ",
-        "rs.": " rupees ",
-        "rs": " rupees ",
-        "×": "*",
-        "÷": "/",
-        "−": "-",
-        "–": "-",
-        "—": "-",
-        "’": "'",
-        "“": '"',
-        "”": '"',
-    }
-
-    for a, b in replacements.items():
-        text = text.replace(a, b)
-
-    return text.lower()
+    text = text.replace("₹", " ")
+    text = text.replace("rs.", " ")
+    text = text.replace("Rs.", " ")
+    text = text.replace("Rs", " ")
+    text = text.replace(",", "")
+    text = text.replace("×", "*")
+    text = text.replace("÷", "/")
+    text = text.replace("−", "-")
+    text = text.replace("–", "-")
+    return text.lower().strip()
 
 
 def clean_number(value):
-    if value is None:
-        return None
-
     try:
-        value = str(value)
-        value = value.replace(",", "")
-        value = value.replace("₹", "")
-        value = value.replace("rupees", "")
-        value = value.replace("rs.", "")
-        value = value.replace("rs", "")
-        value = value.replace("%", "")
-        return float(value.strip())
-    except Exception:
+        return float(str(value).replace(",", "").strip())
+    except:
         return None
 
 
 def format_number(value):
     if value is None:
         return "0"
-
     try:
         value = float(value)
-
         if abs(value - round(value)) < 0.000001:
             value = int(round(value))
         else:
             value = round(value, 2)
-
         return f"{value:,}"
-
-    except Exception:
+    except:
         return str(value)
 
 
@@ -138,42 +54,24 @@ def money(value):
     return "₹" + format_number(value)
 
 
-def format_decimal(value):
-    if value is None:
-        return "0"
-
+def format_decimal(value, places=2):
     try:
-        value = float(value)
-
-        if abs(value - round(value)) < 0.000001:
-            return str(int(round(value)))
-
-        return str(round(value, 2))
-
-    except Exception:
+        return f"{float(value):.{places}f}"
+    except:
         return str(value)
 
 
 def percentage(value):
-    return f"{format_decimal(value)}%"
+    try:
+        return f"{float(value):.2f}%"
+    except:
+        return str(value)
 
 
 def all_numbers(text):
-    text = normalize(text)
-
-    matches = re.findall(
-        r"(?<![\w.])\d+(?:,\d{3})*(?:\.\d+)?",
-        text
-    )
-
-    result = []
-
-    for x in matches:
-        n = clean_number(x)
-        if n is not None:
-            result.append(n)
-
-    return result
+    text = str(text).replace(",", "")
+    nums = re.findall(r"(?<![A-Za-z])[-+]?\d+(?:\.\d+)?", text)
+    return [float(x) for x in nums]
 
 
 def first_number(text):
@@ -182,3602 +80,1306 @@ def first_number(text):
 
 
 def safe_div(a, b):
-    if b == 0:
-        return None
-    return a / b
-
-
-def simplify_ratio(a, b):
-    if a is None or b is None:
-        return "0 : 0"
-
     try:
-        a = float(a)
-        b = float(b)
-
-        if abs(a) < 0.000001 and abs(b) < 0.000001:
-            return "0 : 0"
-
-        if abs(a) < 0.000001:
-            return "0 : 1"
-
-        if abs(b) < 0.000001:
-            return "1 : 0"
-
-        scale = 1000000
-
-        ai = round(a * scale)
-        bi = round(b * scale)
-
-        g = math.gcd(abs(ai), abs(bi))
-
-        if g == 0:
-            return f"{format_decimal(a)} : {format_decimal(b)}"
-
-        return f"{ai // g} : {bi // g}"
-
-    except Exception:
-        return f"{format_decimal(a)} : {format_decimal(b)}"
+        if b == 0:
+            return None
+        return a / b
+    except:
+        return None
 
 
-# ============================================================
-# NUMBER EXTRACTION
-# ============================================================
+def fraction_text(num, den):
+    if den == 0:
+        return "undefined"
+    return f"{num}/{den}"
 
-NUMBER_PATTERN = r"(?:\d{1,3}(?:,\d{2,3})+|\d+(?:\.\d+)?)"
+
+# -------------------------
+# FRACTION / RATIO HELPERS
+# -------------------------
+
+def gcd(a, b):
+    a = abs(int(a))
+    b = abs(int(b))
+    while b:
+        a, b = b, a % b
+    return a
 
 
-def extract_percentage(text, default=None):
-    t = normalize(text)
+def simplify_ratio(values):
+    values = [int(round(float(x))) for x in values]
+    if not values:
+        return ""
+    g = values[0]
+    for x in values[1:]:
+        g = gcd(g, x)
+    if g == 0:
+        return ":".join(map(str, values))
+    return ":".join(str(int(x / g)) for x in values)
 
-    m = re.search(
-        rf"({NUMBER_PATTERN})\s*(?:%|percent|per cent)",
-        t
-    )
 
+def parse_fraction(s):
+    if not s:
+        return None
+
+    s = str(s).strip()
+
+    m = re.search(r"(\d+)\s*/\s*(\d+)", s)
     if m:
-        return clean_number(m.group(1))
+        return float(m.group(1)) / float(m.group(2))
 
-    return default
-
-
-def extract_years_purchase(text):
-    t = normalize(text)
-
-    m = re.search(
-        rf"({NUMBER_PATTERN})\s*(?:years?|yrs?)\s*(?:purchase|p\.?a\.?)",
-        t
-    )
-
+    m = re.search(r"(\d+)\s*:\s*(\d+)", s)
     if m:
-        return clean_number(m.group(1))
-
-    if "years purchase" in t:
-        m = re.search(
-            rf"({NUMBER_PATTERN})\s*years?",
-            t
-        )
-
-        if m:
-            return clean_number(m.group(1))
+        return float(m.group(1)) / float(m.group(2))
 
     return None
 
-
-def extract_labeled_number(text, labels):
-    t = normalize(text)
-
-    for label in labels:
-
-        # Example:
-        # capital employed = 100000
-        # current assets 200000
-        pattern = (
-            rf"{re.escape(label)}"
-            rf"\s*(?:is|was|of|=|:)?"
-            rf"\s*(?:rupees\s*)?"
-            rf"({NUMBER_PATTERN})"
-        )
-
-        m = re.search(pattern, t)
-
-        if m:
-            return clean_number(m.group(1))
-
-        # More flexible:
-        # capital employed of ₹1,00,000
-        pattern = (
-            rf"{re.escape(label)}"
-            rf"\D{{0,40}}"
-            rf"(?:rupees\s*)?"
-            rf"({NUMBER_PATTERN})"
-        )
-
-        m = re.search(pattern, t)
-
-        if m:
-            return clean_number(m.group(1))
-
-    return None
-
-
-# ============================================================
-# IMPORTANT AMOUNT EXTRACTION
-# ============================================================
-
-def extract_amount_after(text, phrases):
-    """
-    Safely extracts amounts.
-
-    Handles:
-    ₹40,000 as goodwill premium
-    40,000 as goodwill premium
-    brings ₹40,000 as goodwill premium
-    goodwill premium = ₹40,000
-    goodwill premium of ₹40,000
-
-    IMPORTANT:
-    It does NOT accidentally take 1/5 or another nearby number.
-    """
-
-    t = normalize(text)
-
-    # --------------------------------------------------------
-    # Pattern 1:
-    # brings rupees 40000 as goodwill premium
-    # --------------------------------------------------------
-
-    for phrase in phrases:
-
-        pattern = (
-            rf"(?:brings?|brought|pays?|paid|contributes?|"
-            rf"contributed|receives?|received)"
-            rf"\s+(?:rupees\s*)?"
-            rf"({NUMBER_PATTERN})"
-            rf"\s+(?:as\s+)?"
-            rf"{re.escape(phrase)}"
-        )
-
-        m = re.search(pattern, t)
-
-        if m:
-            return clean_number(m.group(1))
-
-    # --------------------------------------------------------
-    # Pattern 2:
-    # goodwill premium of ₹40,000
-    # goodwill premium = ₹40,000
-    # --------------------------------------------------------
-
-    for phrase in phrases:
-
-        pattern = (
-            rf"{re.escape(phrase)}"
-            rf"\s*(?:is|was|of|=|:)?"
-            rf"\s*(?:rupees\s*)?"
-            rf"({NUMBER_PATTERN})"
-        )
-
-        m = re.search(pattern, t)
-
-        if m:
-            return clean_number(m.group(1))
-
-    # --------------------------------------------------------
-    # Pattern 3:
-    # ₹40,000 as goodwill premium
-    # --------------------------------------------------------
-
-    for phrase in phrases:
-
-        pattern = (
-            rf"(?:rupees\s*)?"
-            rf"({NUMBER_PATTERN})"
-            rf"\s+as\s+"
-            rf"{re.escape(phrase)}"
-        )
-
-        m = re.search(pattern, t)
-
-        if m:
-            return clean_number(m.group(1))
-
-    return None
-
-
-# ============================================================
-# RATIO / FRACTION EXTRACTION
-# ============================================================
 
 def extract_ratio(text):
-    t = normalize(text)
+    text = normalize(text)
 
-    # Prefer explicit profit-sharing ratio
     patterns = [
-        r"sharing\s+profits?\s+in\s+(?:the\s+)?ratio\s+(\d+)\s*:\s*(\d+)",
-        r"profit\s+sharing\s+ratio\s*(?:is|=|of)?\s*(\d+)\s*:\s*(\d+)",
-        r"sharing\s+ratio\s*(?:is|=|of)?\s*(\d+)\s*:\s*(\d+)",
-        r"ratio\s*(?:is|=|of)?\s*(\d+)\s*:\s*(\d+)",
-        r"(\d+)\s*:\s*(\d+)",
+        r"ratio\s*(?:of|is|=|:)?\s*(\d+)\s*:\s*(\d+)",
+        r"sharing.*?(\d+)\s*:\s*(\d+)",
+        r"profits.*?(\d+)\s*:\s*(\d+)"
     ]
 
-    for pattern in patterns:
-        m = re.search(pattern, t)
-
+    for p in patterns:
+        m = re.search(p, text)
         if m:
-            return (
-                float(m.group(1)),
-                float(m.group(2))
-            )
+            return int(m.group(1)), int(m.group(2))
 
     return None
 
 
-def extract_all_ratios(text):
-    t = normalize(text)
-
-    matches = re.findall(
-        r"(\d+)\s*:\s*(\d+)",
-        t
-    )
-
-    return [
-        (float(a), float(b))
-        for a, b in matches
-    ]
+def extract_percentage(text):
+    m = re.search(r"(\d+(?:\.\d+)?)\s*%", str(text))
+    return float(m.group(1)) if m else None
 
 
-def extract_fraction(text):
-    t = normalize(text)
+def extract_share(text):
+    text = normalize(text)
 
-    # 1/5
     m = re.search(
-        r"(\d+)\s*/\s*(\d+)",
-        t
+        r"(?:for|admits?.*?for|admit.*?for)\s*(?:a\s*)?(\d+)\s*/\s*(\d+)\s*(?:share)?",
+        text
     )
 
     if m:
-        a = float(m.group(1))
-        b = float(m.group(2))
+        return float(m.group(1)) / float(m.group(2))
 
-        if b != 0:
-            return a / b
-
-    words = {
-        "one half": 1 / 2,
-        "one third": 1 / 3,
-        "one fourth": 1 / 4,
-        "one quarter": 1 / 4,
-        "one fifth": 1 / 5,
-        "one sixth": 1 / 6,
-        "one seventh": 1 / 7,
-        "one eighth": 1 / 8,
-        "one ninth": 1 / 9,
-        "one tenth": 1 / 10,
-
-        "two fifth": 2 / 5,
-        "two fifths": 2 / 5,
-        "three fifth": 3 / 5,
-        "three fifths": 3 / 5,
-    }
-
-    for word, value in words.items():
-        if word in t:
-            return value
+    m = re.search(r"(\d+)\s*/\s*(\d+)\s*share", text)
+    if m:
+        return float(m.group(1)) / float(m.group(2))
 
     return None
 
 
-# ============================================================
-# PROFIT SERIES
-# ============================================================
+# -------------------------
+# MONEY EXTRACTION
+# -------------------------
 
-def extract_profit_series(text):
-    t = normalize(text)
+def extract_labeled_number(text, labels):
+    text = str(text)
 
-    profits = []
-
-    patterns = [
-        rf"(?:first|1st)\s*year\D{{0,30}}({NUMBER_PATTERN})",
-        rf"(?:second|2nd)\s*year\D{{0,30}}({NUMBER_PATTERN})",
-        rf"(?:third|3rd)\s*year\D{{0,30}}({NUMBER_PATTERN})",
-        rf"(?:fourth|4th)\s*year\D{{0,30}}({NUMBER_PATTERN})",
-        rf"(?:fifth|5th)\s*year\D{{0,30}}({NUMBER_PATTERN})",
-    ]
-
-    for pattern in patterns:
-
-        m = re.search(pattern, t)
-
+    for label in labels:
+        pattern = rf"{label}\s*(?:=|is|of|amount)?\s*(?:₹|rs\.?|inr)?\s*([\d,]+(?:\.\d+)?)"
+        m = re.search(pattern, text, re.I)
         if m:
-            n = clean_number(m.group(1))
+            return clean_number(m.group(1))
 
-            if n is not None:
-                profits.append(n)
-
-    if len(profits) >= 2:
-        return profits
-
-    # Example:
-    # profits were 10000, 12000, 15000, 18000
-    m = re.search(
-        r"(?:profits?|profit for the years?)"
-        r"\D{0,60}"
-        r"((?:\d[\d,]*(?:\.\d+)?\D*){2,})",
-        t
-    )
-
-    if m:
-        nums = all_numbers(m.group(1))
-
-        if len(nums) >= 2:
-            return nums
-
-    return []
+    return None
 
 
-def extract_average_profit(text):
-    return extract_labeled_number(
-        text,
-        [
-            "average profit",
-            "average profits",
-            "avg profit",
-            "avg profits",
-        ]
-    )
+def extract_amount_after(text, phrases):
+    text = str(text)
+
+    for phrase in phrases:
+        pattern = rf"{phrase}\s*(?:=|is|of|amounting\s+to|worth)?\s*(?:₹|rs\.?|inr)?\s*([\d,]+(?:\.\d+)?)"
+        m = re.search(pattern, text, re.I)
+        if m:
+            return clean_number(m.group(1))
+
+    return None
 
 
-def extract_normal_profit(text):
-    return extract_labeled_number(
-        text,
-        [
-            "normal profit",
-            "normal profits",
-        ]
-    )
-
-
-def extract_super_profit(text):
-    return extract_labeled_number(
-        text,
-        [
-            "super profit",
-            "super profits",
-        ]
-    )
-
-
-def extract_capital_employed(text):
-    return extract_labeled_number(
-        text,
-        [
-            "capital employed",
-            "capital employed of",
-            "capital invested",
-            "total capital employed",
-        ]
-    )
-
-
-# ============================================================
-# SAFE BASIC MATH
-# ============================================================
+# =========================================================
+# SAFE MATH
+# =========================================================
 
 _ALLOWED_BIN = {
-    ast.Add: operator.add,
-    ast.Sub: operator.sub,
-    ast.Mult: operator.mul,
-    ast.Div: operator.truediv,
-    ast.Pow: operator.pow,
-    ast.Mod: operator.mod,
-    ast.FloorDiv: operator.floordiv,
+    ast.Add: op.add,
+    ast.Sub: op.sub,
+    ast.Mult: op.mul,
+    ast.Div: op.truediv,
+    ast.Pow: op.pow,
+    ast.Mod: op.mod,
 }
 
 _ALLOWED_UNARY = {
-    ast.UAdd: operator.pos,
-    ast.USub: operator.neg,
+    ast.UAdd: op.pos,
+    ast.USub: op.neg,
 }
 
 
 def safe_math(expression):
-
-    expression = expression.replace("^", "**")
-
     try:
-        tree = ast.parse(
-            expression,
-            mode="eval"
-        )
-    except Exception:
-        return None
+        expression = expression.replace(",", "")
+        tree = ast.parse(expression, mode="eval")
 
-    def evaluate(node):
+        def calc(node):
+            if isinstance(node, ast.Expression):
+                return calc(node.body)
 
-        if isinstance(node, ast.Expression):
-            return evaluate(node.body)
+            if isinstance(node, ast.Constant):
+                if isinstance(node.value, (int, float)):
+                    return node.value
+                raise ValueError()
 
-        if isinstance(node, ast.Constant):
+            if isinstance(node, ast.BinOp):
+                fn = _ALLOWED_BIN.get(type(node.op))
+                if not fn:
+                    raise ValueError()
+                return fn(calc(node.left), calc(node.right))
 
-            if isinstance(node.value, (int, float)):
-                return node.value
+            if isinstance(node, ast.UnaryOp):
+                fn = _ALLOWED_UNARY.get(type(node.op))
+                if not fn:
+                    raise ValueError()
+                return fn(calc(node.operand))
 
             raise ValueError()
 
-        if isinstance(node, ast.BinOp):
+        return calc(tree)
 
-            op = _ALLOWED_BIN.get(
-                type(node.op)
-            )
-
-            if not op:
-                raise ValueError()
-
-            left = evaluate(node.left)
-            right = evaluate(node.right)
-
-            if (
-                isinstance(node.op, ast.Pow)
-                and abs(right) > 20
-            ):
-                raise ValueError()
-
-            return op(left, right)
-
-        if isinstance(node, ast.UnaryOp):
-
-            op = _ALLOWED_UNARY.get(
-                type(node.op)
-            )
-
-            if not op:
-                raise ValueError()
-
-            return op(
-                evaluate(node.operand)
-            )
-
-        raise ValueError()
-
-    try:
-        return evaluate(tree)
-
-    except Exception:
+    except:
         return None
 
 
-def basic_math_solver(text):
+# =========================================================
+# GOODWILL
+# =========================================================
 
-    expression = text.strip()
+def solve_goodwill_average(text):
+    n = normalize(text)
 
-    expression = expression.replace(
-        ",",
-        ""
+    if "average profit" not in n:
+        return None
+
+    profits = []
+
+    m = re.search(
+        r"profits?\s*(?:are|were|of)?\s*([\d,\s]+(?:and|,)\s*[\d,\s]+(?:and|,)?[\d,\s]*)",
+        text,
+        re.I
     )
 
-    expression = expression.replace(
-        "₹",
-        ""
-    )
+    if m:
+        profits = all_numbers(m.group(1))
 
-    expression = expression.replace(
-        "×",
-        "*"
-    )
+    if not profits:
+        nums = all_numbers(text)
+        if len(nums) >= 3:
+            profits = nums[:3]
 
-    expression = expression.replace(
-        "÷",
-        "/"
-    )
+    years = extract_labeled_number(text, ["years?['’]? purchase", "years?"])
 
-    if not re.fullmatch(
-        r"[\d\s+\-*/().^]+",
-        expression
-    ):
+    if years is None:
+        m = re.search(r"(\d+)\s*(?:years?|year).*?(?:purchase|goodwill)", n)
+        if m:
+            years = float(m.group(1))
+
+    if not profits or years is None:
         return None
 
-    result = safe_math(
-        expression
-    )
-
-    if result is None:
-        return None
-
-    return (
-        "### Answer\n\n"
-        f"**{format_number(result)}**"
-    )
-
-
-# ============================================================
-# GOODWILL - AVERAGE PROFIT
-# ============================================================
-
-def solve_average_profit_goodwill(text):
-
-    t = normalize(text)
-
-    if "goodwill" not in t:
-        return None
-
-    if "average profit" not in t:
-        return None
-
-    if "super profit" in t:
-        return None
-
-    avg = extract_average_profit(t)
-
-    profits = extract_profit_series(t)
-
-    if avg is None and len(profits) >= 2:
-        avg = sum(profits) / len(profits)
-
-    years = extract_years_purchase(t)
-
-    if avg is None or years is None:
-        return None
-
+    avg = sum(profits) / len(profits)
     goodwill = avg * years
 
-    return "\n".join([
-        "### Goodwill — Average Profit Method",
-        "",
-        f"Average Profit = {money(avg)}",
-        f"Years' Purchase = {format_decimal(years)}",
-        "",
-        "Goodwill = Average Profit × Years' Purchase",
-        f"= {money(avg)} × {format_decimal(years)}",
-        f"= **{money(goodwill)}**",
-    ])
+    return f"""DETAILED SOLUTION — GOODWILL BY AVERAGE PROFIT METHOD
+
+Given:
+Profits = {", ".join(money(x) for x in profits)}
+Number of years' purchase = {format_number(years)}
+
+Step 1: Calculate Average Profit
+
+Average Profit
+= Total Profits / Number of Years
+
+= ({' + '.join(money(x) for x in profits)}) / {format_number(len(profits))}
+
+= {money(avg)}
+
+Step 2: Calculate Goodwill
+
+Formula:
+Goodwill = Average Profit × Years' Purchase
+
+= {money(avg)} × {format_number(years)}
+
+= {money(goodwill)}
+
+FINAL ANSWER:
+Goodwill = {money(goodwill)}
+"""
 
 
-# ============================================================
-# SUPER PROFIT
-# ============================================================
 
-def solve_super_profit(text):
+def solve_goodwill_super(text):
+    n = normalize(text)
 
-    t = normalize(text)
-
-    if "super profit" not in t:
+    if "super profit" not in n:
         return None
 
-    avg = extract_average_profit(t)
+    avg = extract_labeled_number(text, ["average profit"])
+    normal = extract_labeled_number(text, ["normal profit"])
 
-    if avg is None:
-        profits = extract_profit_series(t)
+    years = extract_labeled_number(
+        text,
+        ["years?['’]? purchase", "years? purchase"]
+    )
 
-        if profits:
-            avg = sum(profits) / len(profits)
+    if avg is None or normal is None or years is None:
+        return None
 
-    normal = extract_normal_profit(t)
+    super_profit = avg - normal
+    goodwill = super_profit * years
 
-    if normal is None:
+    return f"""DETAILED SOLUTION — GOODWILL BY SUPER PROFIT METHOD
 
-        capital = extract_capital_employed(t)
-        rate = extract_percentage(t)
+Given:
+Average Profit = {money(avg)}
+Normal Profit = {money(normal)}
+Years' Purchase = {format_number(years)}
 
-        if (
-            capital is not None
-            and rate is not None
-        ):
-            normal = capital * rate / 100
+Step 1: Calculate Super Profit
+
+Formula:
+Super Profit = Average Profit - Normal Profit
+
+= {money(avg)} - {money(normal)}
+
+= {money(super_profit)}
+
+Step 2: Calculate Goodwill
+
+Formula:
+Goodwill = Super Profit × Years' Purchase
+
+= {money(super_profit)} × {format_number(years)}
+
+= {money(goodwill)}
+
+FINAL ANSWER:
+Super Profit = {money(super_profit)}
+Goodwill = {money(goodwill)}
+"""
+
+
+
+def solve_goodwill_capitalisation(text):
+    n = normalize(text)
+
+    if "capitalisation" not in n and "capitalization" not in n:
+        return None
+
+    avg = extract_labeled_number(text, ["average profit"])
+    normal_rate = extract_labeled_number(
+        text,
+        ["normal rate", "normal rate of return"]
+    )
+    net_assets = extract_labeled_number(
+        text,
+        ["capital employed", "net assets"]
+    )
+
+    if avg is None or normal_rate is None:
+        return None
+
+    capitalised = safe_div(avg * 100, normal_rate)
+
+    goodwill = None
+
+    if net_assets is not None:
+        goodwill = capitalised - net_assets
+
+    result = f"""DETAILED SOLUTION — CAPITALISATION METHOD
+
+Given:
+Average Profit = {money(avg)}
+Normal Rate of Return = {format_number(normal_rate)}%
+"""
+
+    result += f"""
+Step 1: Calculate Capitalised Value of Average Profit
+
+Formula:
+Capitalised Value
+= Average Profit × 100 / Normal Rate
+
+= {money(avg)} × 100 / {format_number(normal_rate)}
+
+= {money(capitalised)}
+"""
+
+    if net_assets is not None:
+        result += f"""
+Step 2: Calculate Goodwill
+
+Formula:
+Goodwill = Capitalised Value - Net Assets
+
+= {money(capitalised)} - {money(net_assets)}
+
+= {money(goodwill)}
+
+FINAL ANSWER:
+Goodwill = {money(goodwill)}
+"""
+    else:
+        result += "\nNet Assets were not provided, so goodwill cannot be completed."
+
+    return result
+
+
+# =========================================================
+# SUPER PROFIT
+# =========================================================
+
+def solve_super_profit(text):
+    n = normalize(text)
+
+    if "super profit" not in n:
+        return None
+
+    avg = extract_labeled_number(text, ["average profit"])
+    normal = extract_labeled_number(text, ["normal profit"])
 
     if avg is None or normal is None:
         return None
 
-    super_profit = avg - normal
+    sp = avg - normal
 
-    lines = [
-        "### Super Profit",
-        "",
-        f"Average Profit = {money(avg)}",
-        f"Normal Profit = {money(normal)}",
-        "",
-        "Super Profit = Average Profit − Normal Profit",
-        f"= {money(avg)} − {money(normal)}",
-        f"= **{money(super_profit)}**",
-    ]
+    return f"""DETAILED SOLUTION — SUPER PROFIT
 
-    years = extract_years_purchase(t)
+Given:
+Average Profit = {money(avg)}
+Normal Profit = {money(normal)}
 
-    if (
-        years is not None
-        and "goodwill" in t
-    ):
+Formula:
+Super Profit = Average Profit - Normal Profit
 
-        goodwill = (
-            super_profit
-            * years
-        )
+= {money(avg)} - {money(normal)}
 
-        lines += [
-            "",
-            "### Goodwill — Super Profit Method",
-            "",
-            "Goodwill = Super Profit × Years' Purchase",
-            f"= {money(super_profit)} × {format_decimal(years)}",
-            f"= **{money(goodwill)}**",
-        ]
+= {money(sp)}
 
-    return "\n".join(lines)
+FINAL ANSWER:
+Super Profit = {money(sp)}
+"""
 
 
-# ============================================================
-# CAPITALISATION
-# ============================================================
-
-def solve_capitalisation_goodwill(text):
-
-    t = normalize(text)
-
-    if (
-        "capitalisation" not in t
-        and "capitalization" not in t
-    ):
-        return None
-
-    if "goodwill" not in t:
-        return None
-
-    avg = extract_average_profit(t)
-    rate = extract_percentage(t)
-    capital = extract_capital_employed(t)
-
-    if avg is None:
-
-        profits = extract_profit_series(t)
-
-        if profits:
-            avg = sum(profits) / len(profits)
-
-    if avg is None or rate is None:
-        return None
-
-    capitalised_value = (
-        avg * 100 / rate
-    )
-
-    if capital is not None:
-
-        goodwill = (
-            capitalised_value
-            - capital
-        )
-
-        return "\n".join([
-            "### Goodwill — Capitalisation Method",
-            "",
-            f"Average Profit = {money(avg)}",
-            f"Normal Rate = {percentage(rate)}",
-            "",
-            "Capitalised Value = Average Profit × 100 / Normal Rate",
-            f"= {money(avg)} × 100 / {format_decimal(rate)}",
-            f"= {money(capitalised_value)}",
-            "",
-            "Goodwill = Capitalised Value − Actual Capital Employed",
-            f"= {money(capitalised_value)} − {money(capital)}",
-            f"= **{money(goodwill)}**",
-        ])
-
-    return "\n".join([
-        "### Capitalised Value",
-        "",
-        "Capitalised Value = Average Profit × 100 / Normal Rate",
-        f"= **{money(capitalised_value)}**",
-    ])
-
-
-# ============================================================
-# NORMAL PROFIT
-# ============================================================
-
-def solve_normal_profit_question(text):
-
-    t = normalize(text)
-
-    if "normal profit" not in t:
-        return None
-
-    capital = extract_capital_employed(t)
-    rate = extract_percentage(t)
-
-    if capital is None or rate is None:
-        return None
-
-    result = capital * rate / 100
-
-    return "\n".join([
-        "### Normal Profit",
-        "",
-        "Normal Profit = Capital Employed × Normal Rate / 100",
-        f"= {money(capital)} × {format_decimal(rate)} / 100",
-        f"= **{money(result)}**",
-    ])
-
-
-# ============================================================
-# WEIGHTED AVERAGE
-# ============================================================
-
-def solve_weighted_average_profit(text):
-
-    t = normalize(text)
-
-    if "weighted average" not in t:
-        return None
-
-    profits = extract_profit_series(t)
-
-    if len(profits) < 2:
-        return None
-
-    weights = []
-
-    for m in re.finditer(
-        rf"(?:weight|weights?)\D{{0,20}}({NUMBER_PATTERN})",
-        t
-    ):
-
-        n = clean_number(m.group(1))
-
-        if n is not None:
-            weights.append(n)
-
-    if len(weights) != len(profits):
-        weights = list(
-            range(
-                1,
-                len(profits) + 1
-            )
-        )
-
-    weighted_total = sum(
-        p * w
-        for p, w in zip(
-            profits,
-            weights
-        )
-    )
-
-    weight_total = sum(weights)
-
-    avg = (
-        weighted_total
-        / weight_total
-    )
-
-    return "\n".join([
-        "### Weighted Average Profit",
-        "",
-        "Weighted Average Profit = Σ(Profit × Weight) / ΣWeight",
-        f"= {money(weighted_total)} / {format_decimal(weight_total)}",
-        f"= **{money(avg)}**",
-    ])
-
-
-# ============================================================
-# INTEREST ON CAPITAL
-# ============================================================
-
-def solve_interest_on_capital(text):
-
-    t = normalize(text)
-
-    if "interest on capital" not in t:
-        return None
-
-    capital = extract_labeled_number(
-        t,
-        [
-            "capital",
-            "opening capital",
-            "capital account",
-            "capital invested",
-        ]
-    )
-
-    rate = extract_percentage(t)
-
-    if capital is None or rate is None:
-        return None
-
-    interest = (
-        capital
-        * rate
-        / 100
-    )
-
-    return "\n".join([
-        "### Interest on Capital",
-        "",
-        "Interest = Capital × Rate / 100",
-        f"= {money(capital)} × {format_decimal(rate)} / 100",
-        f"= **{money(interest)}**",
-    ])
-
-
-# ============================================================
-# INTEREST ON DRAWINGS
-# ============================================================
-
-def solve_interest_on_drawings(text):
-
-    t = normalize(text)
-
-    if "interest on drawings" not in t:
-        return None
-
-    drawings = extract_labeled_number(
-        t,
-        [
-            "drawings",
-            "drawing",
-            "amount of drawings",
-            "drawings made",
-        ]
-    )
-
-    rate = extract_percentage(t)
-
-    if drawings is None or rate is None:
-        return None
-
-    months = extract_labeled_number(
-        t,
-        [
-            "months",
-            "month",
-        ]
-    )
-
-    if (
-        months is not None
-        and months <= 12
-    ):
-
-        interest = (
-            drawings
-            * rate
-            / 100
-            * months
-            / 12
-        )
-
-        return "\n".join([
-            "### Interest on Drawings",
-            "",
-            "Interest = Drawings × Rate × Time / 100",
-            f"= {money(drawings)} × {format_decimal(rate)} × {format_decimal(months)}/12",
-            f"= **{money(interest)}**",
-        ])
-
-    interest = (
-        drawings
-        * rate
-        / 100
-    )
-
-    return "\n".join([
-        "### Interest on Drawings",
-        "",
-        "Interest = Drawings × Rate / 100",
-        f"= {money(drawings)} × {format_decimal(rate)} / 100",
-        f"= **{money(interest)}**",
-    ])
-
-
-# ============================================================
-# PARTNER SALARY / COMMISSION
-# ============================================================
-
-def solve_partner_salary_commission(text):
-
-    t = normalize(text)
-
-    if "partner" not in t:
-        return None
-
-    if (
-        "salary" not in t
-        and "commission" not in t
-    ):
-        return None
-
-    lines = []
-
-    salary = extract_labeled_number(
-        t,
-        [
-            "partner salary",
-            "salary to partner",
-            "salary",
-        ]
-    )
-
-    if salary is not None:
-        lines.append(
-            f"Partner Salary = **{money(salary)}**"
-        )
-
-    commission = extract_labeled_number(
-        t,
-        [
-            "partner commission",
-            "commission",
-        ]
-    )
-
-    rate = extract_percentage(t)
-
-    profit = extract_labeled_number(
-        t,
-        [
-            "profit before commission",
-            "profit before charging commission",
-            "net profit",
-            "profit",
-        ]
-    )
-
-    if (
-        commission is None
-        and rate is not None
-        and profit is not None
-        and "commission" in t
-    ):
-
-        commission = (
-            profit
-            * rate
-            / 100
-        )
-
-    if commission is not None:
-        lines.append(
-            f"Partner Commission = **{money(commission)}**"
-        )
-
-    if not lines:
-        return None
-
-    return (
-        "### Partner Salary / Commission\n\n"
-        + "\n".join(lines)
-    )
-
-
-# ============================================================
-# ADMISSION OF PARTNER
-# ============================================================
+# =========================================================
+# PARTNERSHIP — ADMISSION
+# =========================================================
 
 def solve_admission(text):
+    n = normalize(text)
 
-    t = normalize(text)
+    if "admit" not in n and "admission" not in n:
+        return None
 
-    admission_words = [
-        "admitted",
-        "admission",
-        "new partner",
-        "admit c",
-        "admit a",
-        "admit b",
+    ratio = extract_ratio(text)
+    c_share = extract_share(text)
+
+    if ratio is None or c_share is None:
+        return None
+
+    a_old, b_old = ratio
+    total_old = a_old + b_old
+
+    a_old_share = a_old / total_old
+    b_old_share = b_old / total_old
+
+    remaining = 1 - c_share
+
+    # Future profits equally
+    equal_future = bool(
+        re.search(
+            r"(a\s*and\s*b|a\s*&\s*b).*?(share|divide).*?(equally|equal)",
+            n
+        )
+        or re.search(
+            r"(future\s+profits?|profits?).*?(equally|equal).*?(a\s*and\s*b|a\s*&\s*b)",
+            n
+        )
+    )
+
+    if equal_future:
+        a_new = remaining / 2
+        b_new = remaining / 2
+    else:
+        a_new = remaining * a_old_share
+        b_new = remaining * b_old_share
+
+    c_new = c_share
+
+    sacrifice_a = a_old_share - a_new
+    sacrifice_b = b_old_share - b_new
+
+    new_ratio_values = [
+        round(a_new * 1000000),
+        round(b_new * 1000000),
+        round(c_new * 1000000)
     ]
 
-    if not any(
-        x in t
-        for x in admission_words
-    ):
-        return None
+    sac_values = [
+        round(sacrifice_a * 1000000),
+        round(sacrifice_b * 1000000)
+    ]
 
-    old_ratio = extract_ratio(t)
+    new_ratio = simplify_ratio(new_ratio_values)
+    sacrifice_ratio = simplify_ratio(sac_values)
 
-    if old_ratio is None:
-        return None
-
-    old_a, old_b = old_ratio
-
-    old_total = (
-        old_a
-        + old_b
-    )
-
-    # --------------------------------------------------------
-    # NEW PARTNER SHARE
-    # --------------------------------------------------------
-
-    new_share = extract_fraction(t)
-
-    if new_share is None:
-
-        m = re.search(
-            r"for\s+(\d+)\s*/\s*(\d+)\s+share",
-            t
-        )
-
-        if m:
-            new_share = (
-                float(m.group(1))
-                / float(m.group(2))
-            )
-
-    if new_share is None:
-        return None
-
-    remaining = (
-        1
-        - new_share
-    )
-
-    # --------------------------------------------------------
-    # CHECK WHETHER OLD PARTNERS SHARE EQUALLY
-    # --------------------------------------------------------
-
-    equal_old = any(
-        phrase in t
-        for phrase in [
-            "share the future profits equally",
-            "share future profits equally",
-            "future profits equally",
-            "share equally after",
-            "equally after c",
-            "equally after admission",
-            "future profit equally",
-        ]
-    )
-
-    if equal_old:
-
-        new_a = (
-            remaining / 2
-        )
-
-        new_b = (
-            remaining / 2
-        )
-
-    else:
-
-        new_a = (
-            old_a
-            / old_total
-            * remaining
-        )
-
-        new_b = (
-            old_b
-            / old_total
-            * remaining
-        )
-
-    new_c = new_share
-
-    # --------------------------------------------------------
-    # NEW RATIO
-    # --------------------------------------------------------
-
-    scale = 100000
-
-    A = round(
-        new_a * scale
-    )
-
-    B = round(
-        new_b * scale
-    )
-
-    C = round(
-        new_c * scale
-    )
-
-    g = math.gcd(
-        math.gcd(
-            abs(A),
-            abs(B)
-        ),
-        abs(C)
-    )
-
-    if g:
-        A //= g
-        B //= g
-        C //= g
-
-    # --------------------------------------------------------
-    # SACRIFICE
-    # --------------------------------------------------------
-
-    old_a_share = (
-        old_a
-        / old_total
-    )
-
-    old_b_share = (
-        old_b
-        / old_total
-    )
-
-    sacrifice_a = (
-        old_a_share
-        - new_a
-    )
-
-    sacrifice_b = (
-        old_b_share
-        - new_b
-    )
-
-    # Remove tiny floating point errors
-    if abs(sacrifice_a) < 0.000001:
-        sacrifice_a = 0
-
-    if abs(sacrifice_b) < 0.000001:
-        sacrifice_b = 0
-
-    # --------------------------------------------------------
-    # GOODWILL PREMIUM
-    # --------------------------------------------------------
-
-    # FIRST priority:
-    # "C brings ₹40,000 as goodwill premium"
-    goodwill_premium = None
+    # Goodwill premium
+    premium = None
 
     direct_patterns = [
-        r"(?:brings?|brought|pays?|paid)"
-        r"\s+(?:rupees\s*)?"
-        rf"({NUMBER_PATTERN})"
-        r"\s+as\s+goodwill\s+premium",
-
-        r"(?:brings?|brought|pays?|paid)"
-        r"\s+(?:rupees\s*)?"
-        rf"({NUMBER_PATTERN})"
-        r"\s+goodwill\s+premium",
+        r"goodwill\s+premium\s*(?:=|is|of)?\s*(?:₹|rs\.?|inr)?\s*([\d,]+(?:\.\d+)?)",
+        r"premium\s+for\s+goodwill\s*(?:=|is|of)?\s*(?:₹|rs\.?|inr)?\s*([\d,]+(?:\.\d+)?)",
+        r"goodwill\s+premium.*?(?:brings?|brought).*?(?:₹|rs\.?|inr)?\s*([\d,]+(?:\.\d+)?)"
     ]
 
-    for pattern in direct_patterns:
-
-        m = re.search(
-            pattern,
-            t
-        )
-
+    for p in direct_patterns:
+        m = re.search(p, text, re.I)
         if m:
-            goodwill_premium = clean_number(
-                m.group(1)
-            )
+            premium = clean_number(m.group(1))
             break
 
-    # SECOND priority:
-    # goodwill premium = ₹40,000
-    if goodwill_premium is None:
-
-        goodwill_premium = extract_amount_after(
-            t,
+    if premium is None:
+        premium = extract_amount_after(
+            text,
             [
-                "goodwill premium",
-                "premium for goodwill",
+                r"brings?\s*(?:₹|rs\.?|inr)?",
+                r"brought\s*(?:₹|rs\.?|inr)?",
+                r"goodwill\s+premium",
+                r"premium\s+for\s+goodwill"
             ]
         )
 
-    # --------------------------------------------------------
-    # FIRM GOODWILL VALUATION
-    # --------------------------------------------------------
-
-    goodwill_valuation = None
-
-    valuation_patterns = [
-        rf"goodwill\s+of\s+the\s+firm\s+is\s+valued\s+at"
-        rf"\s+(?:rupees\s*)?({NUMBER_PATTERN})",
-
-        rf"goodwill\s+is\s+valued\s+at"
-        rf"\s+(?:rupees\s*)?({NUMBER_PATTERN})",
-
-        rf"goodwill\s+valued\s+at"
-        rf"\s+(?:rupees\s*)?({NUMBER_PATTERN})",
-    ]
-
-    for pattern in valuation_patterns:
-
-        m = re.search(
-            pattern,
-            t
-        )
-
-        if m:
-            goodwill_valuation = clean_number(
-                m.group(1)
-            )
-            break
-
-    # If premium not directly given,
-    # calculate from firm's goodwill valuation.
-    if (
-        goodwill_premium is None
-        and goodwill_valuation is not None
-    ):
-
-        goodwill_premium = (
-            goodwill_valuation
-            * new_share
-        )
-
-    # --------------------------------------------------------
-    # CAPITAL BROUGHT BY NEW PARTNER
-    # --------------------------------------------------------
-
-    capital = None
-
-    # VERY IMPORTANT:
-    # Capture "₹1,00,000 as capital"
-    capital_patterns = [
-        rf"(?:brings?|brought|contributes?|contributed)"
-        rf"\s+(?:rupees\s*)?"
-        rf"({NUMBER_PATTERN})"
-        r"\s+as\s+capital",
-
-        rf"(?:capital)"
-        rf"\s*(?:is|of|=|:)?"
-        rf"\s+(?:rupees\s*)?"
-        rf"({NUMBER_PATTERN})",
-    ]
-
-    for pattern in capital_patterns:
-
-        m = re.search(
-            pattern,
-            t
-        )
-
-        if m:
-            candidate = clean_number(
-                m.group(1)
-            )
-
-            # Don't accidentally use goodwill amount
-            if (
-                goodwill_premium is None
-                or abs(
-                    candidate
-                    - goodwill_premium
-                ) > 0.000001
-            ):
-                capital = candidate
-                break
-
-    # --------------------------------------------------------
-    # OUTPUT
-    # --------------------------------------------------------
-
-    lines = [
-        "### Admission of New Partner",
-        "",
-        f"Old Ratio = {format_decimal(old_a)} : {format_decimal(old_b)}",
-        f"New Partner's Share = {percentage(new_share * 100)}",
-        "",
-        f"Remaining Share = 1 − {format_decimal(new_share)}",
-        f"= {format_decimal(remaining)}",
-        "",
-    ]
-
-    if equal_old:
-
-        lines += [
-            "A and B share the remaining profit equally.",
-            "",
-            f"A's New Share = {format_decimal(remaining)} / 2",
-            f"= {format_decimal(new_a)}",
-            "",
-            f"B's New Share = {format_decimal(remaining)} / 2",
-            f"= {format_decimal(new_b)}",
-            "",
-        ]
-
-    else:
-
-        lines += [
-            "Remaining profit is distributed between A and B in their old ratio.",
-            "",
-            f"A's New Share = {format_decimal(new_a)}",
-            f"B's New Share = {format_decimal(new_b)}",
-            "",
-        ]
-
-    lines += [
-        "### New Profit Sharing Ratio",
-        f"A : B : C = **{A} : {B} : {C}**",
-        "",
-        "### Sacrificing Ratio",
-        f"A sacrifices = {format_decimal(sacrifice_a)}",
-        f"B sacrifices = {format_decimal(sacrifice_b)}",
-    ]
-
-    if (
-        sacrifice_a == 0
-        and sacrifice_b == 0
-    ):
-        sacrifice_ratio = "0 : 0"
-
-    elif sacrifice_b == 0:
-        sacrifice_ratio = "1 : 0"
-
-    elif sacrifice_a == 0:
-        sacrifice_ratio = "0 : 1"
-
-    else:
-        sacrifice_ratio = simplify_ratio(
-            sacrifice_a,
-            sacrifice_b
-        )
-
-    lines.append(
-        f"Sacrificing Ratio = **{sacrifice_ratio}**"
+    goodwill_value = extract_labeled_number(
+        text,
+        ["goodwill of the firm", "firm goodwill", "goodwill"]
     )
 
-    # --------------------------------------------------------
-    # GOODWILL
-    # --------------------------------------------------------
+    capital = extract_labeled_number(
+        text,
+        ["capital", "capital brought", "brings.*?capital"]
+    )
 
-    if goodwill_premium is not None:
+    result = f"""DETAILED SOLUTION — ADMISSION OF A PARTNER
 
-        lines += [
-            "",
-            "### Goodwill",
-            f"Goodwill Premium brought by C = **{money(goodwill_premium)}**",
-        ]
+STEP 1: Old Profit-Sharing Ratio
 
-        if (
-            sacrifice_a > 0
-            and sacrifice_b > 0
-        ):
+A : B = {a_old} : {b_old}
 
-            total_sacrifice = (
-                sacrifice_a
-                + sacrifice_b
-            )
+Total = {a_old + b_old}
 
-            a_credit = (
-                goodwill_premium
-                * sacrifice_a
-                / total_sacrifice
-            )
+A's old share
+= {a_old}/{a_old + b_old}
+= {fraction_text(a_old, total_old)}
 
-            b_credit = (
-                goodwill_premium
-                * sacrifice_b
-                / total_sacrifice
-            )
+B's old share
+= {b_old}/{a_old + b_old}
+= {fraction_text(b_old, total_old)}
 
-            lines += [
-                "",
-                f"A's share of goodwill = **{money(a_credit)}**",
-                f"B's share of goodwill = **{money(b_credit)}**",
-            ]
+STEP 2: C's Share
 
-        elif sacrifice_a > 0:
+C is admitted for = {c_share:.4f}
+= {c_share * 100:.2f}%
 
-            a_credit = goodwill_premium
+STEP 3: Remaining Share of A and B
 
-            lines += [
-                "",
-                f"Entire goodwill premium goes to A = **{money(a_credit)}**",
-            ]
+Remaining share
+= 1 - C's share
 
-        elif sacrifice_b > 0:
+= 1 - {c_share:.4f}
 
-            b_credit = goodwill_premium
+= {remaining:.4f}
+"""
 
-            lines += [
-                "",
-                f"Entire goodwill premium goes to B = **{money(b_credit)}**",
-            ]
+    if equal_future:
+        result += f"""
+STEP 4: New Shares of A and B
 
-        # ----------------------------------------------------
-        # JOURNAL ENTRIES
-        # ----------------------------------------------------
+Since A and B decide to share future profits equally:
 
-        if capital is not None:
+A's new share
+= {remaining:.4f} / 2
+= {a_new:.4f}
 
-            total_bank = (
-                capital
-                + goodwill_premium
-            )
+B's new share
+= {remaining:.4f} / 2
+= {b_new:.4f}
 
-            lines += [
-                "",
-                "### Journal Entries",
-                "",
-                f"**Bank A/c Dr. ₹{format_number(total_bank)}**",
-                "",
-                f"    To C's Capital A/c ₹{format_number(capital)}",
-                "",
-                f"    To Premium for Goodwill A/c ₹{format_number(goodwill_premium)}",
-                "",
-            ]
+C's new share
+= {c_new:.4f}
+"""
+    else:
+        result += f"""
+STEP 4: New Shares of A and B
 
-            lines.append(
-                f"**Premium for Goodwill A/c Dr. ₹{format_number(goodwill_premium)}**"
-            )
+The remaining profit is divided according to their old ratio.
 
-            if (
-                sacrifice_a > 0
-                and sacrifice_b > 0
-            ):
+A's new share
+= {remaining:.4f} × {a_old}/{total_old}
+= {a_new:.4f}
 
-                total_sacrifice = (
-                    sacrifice_a
-                    + sacrifice_b
-                )
+B's new share
+= {remaining:.4f} × {b_old}/{total_old}
+= {b_new:.4f}
 
-                a_credit = (
-                    goodwill_premium
-                    * sacrifice_a
-                    / total_sacrifice
-                )
+C's new share
+= {c_new:.4f}
+"""
 
-                b_credit = (
-                    goodwill_premium
-                    * sacrifice_b
-                    / total_sacrifice
-                )
+    result += f"""
+STEP 5: New Profit-Sharing Ratio
 
-                lines += [
-                    "",
-                    f"    To A's Capital A/c ₹{format_number(a_credit)}",
-                    "",
-                    f"    To B's Capital A/c ₹{format_number(b_credit)}",
-                ]
+A : B : C
+= {a_new:.4f} : {b_new:.4f} : {c_new:.4f}
 
-            elif sacrifice_a > 0:
+Therefore:
 
-                lines += [
-                    "",
-                    f"    To A's Capital A/c ₹{format_number(goodwill_premium)}",
-                ]
+NEW RATIO = {new_ratio}
 
-            elif sacrifice_b > 0:
+STEP 6: Sacrificing Ratio
 
-                lines += [
-                    "",
-                    f"    To B's Capital A/c ₹{format_number(goodwill_premium)}",
-                ]
+Sacrifice = Old Share - New Share
 
-    return "\n".join(lines)
+A's sacrifice
+= {a_old_share:.4f} - {a_new:.4f}
+= {sacrifice_a:.4f}
 
+B's sacrifice
+= {b_old_share:.4f} - {b_new:.4f}
+= {sacrifice_b:.4f}
 
-# ============================================================
-# RETIREMENT
-# ============================================================
+Therefore:
 
-def solve_retirement(text):
+SACRIFICING RATIO = {sacrifice_ratio}
+"""
 
-    t = normalize(text)
+    if goodwill_value is not None:
+        implied = goodwill_value * c_share
 
-    if not any(
-        x in t
-        for x in [
-            "retires",
-            "retirement",
-            "retiring partner",
-            "retire",
-        ]
-    ):
-        return None
+        result += f"""
+STEP 7: Goodwill
 
-    ratios = extract_all_ratios(t)
+Goodwill of firm = {money(goodwill_value)}
 
-    if not ratios:
-        return None
+C's share = {c_share:.4f}
 
-    old_a, old_b = ratios[0]
+C's share of goodwill
+= {money(goodwill_value)} × {c_share:.4f}
+= {money(implied)}
+"""
 
-    lines = [
-        "### Retirement of Partner",
-        "",
-        f"Old Ratio = {format_decimal(old_a)} : {format_decimal(old_b)}",
-    ]
+    if premium is not None:
+        result += f"""
+C brings Goodwill Premium = {money(premium)}
 
-    if len(ratios) >= 2:
+Distribution of premium is made among sacrificing partners in their sacrificing ratio.
 
-        new_a, new_b = ratios[1]
+A's sacrifice = {sacrifice_a:.4f}
+B's sacrifice = {sacrifice_b:.4f}
+"""
 
-        old_total = (
-            old_a
-            + old_b
-        )
+        total_sac = sacrifice_a + sacrifice_b
 
-        new_total = (
-            new_a
-            + new_b
-        )
+        if total_sac > 0:
+            a_premium = premium * sacrifice_a / total_sac
+            b_premium = premium * sacrifice_b / total_sac
 
-        old_a_share = (
-            old_a
-            / old_total
-        )
+            result += f"""
+A's share of premium
+= {money(premium)} × {sacrifice_a:.4f}/{total_sac:.4f}
+= {money(a_premium)}
 
-        old_b_share = (
-            old_b
-            / old_total
-        )
+B's share of premium
+= {money(premium)} × {sacrifice_b:.4f}/{total_sac:.4f}
+= {money(b_premium)}
+"""
+        else:
+            a_premium = b_premium = 0
 
-        new_a_share = (
-            new_a
-            / new_total
-        )
+    else:
+        a_premium = b_premium = None
 
-        new_b_share = (
-            new_b
-            / new_total
-        )
+    if capital is not None:
+        result += f"""
+C's Capital = {money(capital)}
+"""
 
-        gain_a = (
-            new_a_share
-            - old_a_share
-        )
+    if capital is not None or premium is not None:
+        result += """
 
-        gain_b = (
-            new_b_share
-            - old_b_share
-        )
+JOURNAL ENTRIES
+----------------
+"""
 
-        lines += [
-            f"New Ratio = {format_decimal(new_a)} : {format_decimal(new_b)}",
-            "",
-            "### Gaining Ratio",
-            f"A's Gain = {format_decimal(gain_a)}",
-            f"B's Gain = {format_decimal(gain_b)}",
-            "",
-            f"Gaining Ratio = **{simplify_ratio(gain_a, gain_b)}**",
-        ]
+        if capital is not None and premium is not None:
+            total_bank = capital + premium
 
-    return "\n".join(lines)
+            result += f"""
+Bank A/c Dr.                         {money(total_bank)}
+      To C's Capital A/c                         {money(capital)}
+      To Premium for Goodwill A/c               {money(premium)}
+
+(Being C's capital and goodwill premium brought in cash)
+"""
+
+            if a_premium is not None and b_premium is not None:
+                if a_premium > 0:
+                    result += f"""
+Premium for Goodwill A/c Dr.       {money(premium)}
+      To A's Capital A/c                         {money(a_premium)}
+      To B's Capital A/c                         {money(b_premium)}
+
+(Being goodwill premium distributed among sacrificing partners)
+"""
+
+        elif capital is not None:
+            result += f"""
+Bank A/c Dr.                         {money(capital)}
+      To C's Capital A/c                         {money(capital)}
+
+(Being C's capital brought in cash)
+"""
+
+        elif premium is not None:
+            result += f"""
+Bank A/c Dr.                         {money(premium)}
+      To Premium for Goodwill A/c               {money(premium)}
+
+(Being goodwill premium brought in cash by C)
+"""
+
+    result += f"""
+
+FINAL ANSWER
+------------
+New Profit-Sharing Ratio = {new_ratio}
+Sacrificing Ratio of A and B = {sacrifice_ratio}
+"""
+
+    return result
 
 
-# ============================================================
-# REVALUATION
-# ============================================================
+# =========================================================
+# PARTNERSHIP — REVALUATION
+# =========================================================
 
 def solve_revaluation(text):
+    n = normalize(text)
 
-    t = normalize(text)
-
-    if (
-        "revaluation" not in t
-        and "revaluation account" not in t
-    ):
+    if "revaluation" not in n and "revalued" not in n:
         return None
 
-    increase = extract_labeled_number(
-        t,
-        [
-            "increase in asset",
-            "increase in value of asset",
-            "asset increased",
-        ]
-    )
+    gains = []
+    losses = []
 
-    decrease = extract_labeled_number(
-        t,
-        [
-            "decrease in asset",
-            "decrease in value of asset",
-            "asset decreased",
-        ]
-    )
-
-    liability_increase = extract_labeled_number(
-        t,
-        [
-            "increase in liability",
-            "liability increased",
-        ]
-    )
-
-    liability_decrease = extract_labeled_number(
-        t,
-        [
-            "decrease in liability",
-            "liability decreased",
-        ]
-    )
-
-    if all(
-        x is None
-        for x in [
-            increase,
-            decrease,
-            liability_increase,
-            liability_decrease,
-        ]
-    ):
-        return None
-
-    profit = (
-        (increase or 0)
-        + (liability_decrease or 0)
-        - (decrease or 0)
-        - (liability_increase or 0)
-    )
-
-    return "\n".join([
-        "### Revaluation Account",
-        "",
-        "Profit on Revaluation = Increase in Assets + Decrease in Liabilities",
-        "− Decrease in Assets − Increase in Liabilities",
-        "",
-        f"= {money(increase or 0)} + {money(liability_decrease or 0)}",
-        f"− {money(decrease or 0)} − {money(liability_increase or 0)}",
-        "",
-        f"Net Revaluation Result = **{money(profit)}**",
-    ])
-
-
-# ============================================================
-# PAST ADJUSTMENT
-# ============================================================
-
-def solve_past_adjustment(text):
-
-    t = normalize(text)
-
-    if (
-        "past adjustment" not in t
-        and "past adjustments" not in t
-    ):
-        return None
-
-    return "\n".join([
-        "### Past Adjustment",
-        "",
-        "Past adjustment is made through the Partners' Capital/Current Accounts.",
-        "",
-        "Method:",
-        "1. Calculate the amount each partner should receive.",
-        "2. Calculate the amount actually received.",
-        "3. Find the difference.",
-        "4. Pass one adjustment entry for the net difference.",
-    ])
-
-
-# ============================================================
-# GUARANTEE
-# ============================================================
-
-def solve_guarantee(text):
-
-    t = normalize(text)
-
-    if "guarantee" not in t:
-        return None
-
-    guaranteed = extract_labeled_number(
-        t,
-        [
-            "guaranteed profit",
-            "profit guaranteed",
-            "minimum profit",
-        ]
-    )
-
-    actual = extract_labeled_number(
-        t,
-        [
-            "actual profit",
-            "actual share of profit",
-        ]
-    )
-
-    if guaranteed is None:
-        return None
-
-    lines = [
-        "### Guarantee of Profit",
-        "",
-        f"Guaranteed Profit = {money(guaranteed)}",
+    patterns_gain = [
+        r"(\w+)\s+(?:was\s+)?increased\s+by\s+(?:₹|rs\.?|inr)?\s*([\d,]+)",
+        r"(\w+)\s+(?:is\s+)?appreciated\s+by\s+(?:₹|rs\.?|inr)?\s*([\d,]+)"
     ]
 
-    if actual is not None:
-
-        deficiency = max(
-            guaranteed - actual,
-            0
-        )
-
-        lines += [
-            f"Actual Profit = {money(actual)}",
-            "",
-            "Deficiency = Guaranteed Profit − Actual Profit",
-            f"= {money(guaranteed)} − {money(actual)}",
-            f"= **{money(deficiency)}**",
-        ]
-
-    return "\n".join(lines)
-
-
-# ============================================================
-# DISSOLUTION
-# ============================================================
-
-def solve_dissolution(text):
-
-    t = normalize(text)
-
-    if not any(
-        x in t
-        for x in [
-            "dissolution",
-            "realisation account",
-            "realization account",
-        ]
-    ):
-        return None
-
-    assets = extract_labeled_number(
-        t,
-        [
-            "assets realised",
-            "assets realized",
-            "assets sold for",
-        ]
-    )
-
-    liabilities = extract_labeled_number(
-        t,
-        [
-            "liabilities paid",
-            "liabilities settled",
-            "liabilities discharged",
-        ]
-    )
-
-    expenses = extract_labeled_number(
-        t,
-        [
-            "realisation expenses",
-            "realization expenses",
-        ]
-    )
-
-    if (
-        assets is None
-        and liabilities is None
-        and expenses is None
-    ):
-        return None
-
-    result = (
-        (assets or 0)
-        - (liabilities or 0)
-        - (expenses or 0)
-    )
-
-    lines = [
-        "### Dissolution / Realisation",
-        "",
+    patterns_loss = [
+        r"(\w+)\s+(?:was\s+)?decreased\s+by\s+(?:₹|rs\.?|inr)?\s*([\d,]+)",
+        r"(\w+)\s+(?:is\s+)?reduced\s+by\s+(?:₹|rs\.?|inr)?\s*([\d,]+)"
     ]
 
-    if assets is not None:
-        lines.append(
-            f"Assets Realised = {money(assets)}"
-        )
+    for p in patterns_gain:
+        for m in re.finditer(p, text, re.I):
+            gains.append((m.group(1), clean_number(m.group(2))))
 
-    if liabilities is not None:
-        lines.append(
-            f"Liabilities Paid = {money(liabilities)}"
-        )
+    for p in patterns_loss:
+        for m in re.finditer(p, text, re.I):
+            losses.append((m.group(1), clean_number(m.group(2))))
 
-    if expenses is not None:
-        lines.append(
-            f"Realisation Expenses = {money(expenses)}"
-        )
-
-    lines += [
-        "",
-        f"Basic net realisation amount = **{money(result)}**",
-    ]
-
-    return "\n".join(lines)
-
-
-# ============================================================
-# CURRENT RATIO
-# ============================================================
-
-def solve_current_ratio(text):
-
-    t = normalize(text)
-
-    if "current ratio" not in t:
+    if not gains and not losses:
         return None
 
-    # Don't trigger for quick ratio
-    if "quick ratio" in t:
-        return None
+    total_gain = sum(x[1] for x in gains)
+    total_loss = sum(x[1] for x in losses)
+    profit = total_gain - total_loss
 
-    ca = extract_labeled_number(
-        t,
-        [
-            "current assets",
-            "current asset",
-        ]
-    )
+    result = """DETAILED SOLUTION — REVALUATION ACCOUNT
 
-    cl = extract_labeled_number(
-        t,
-        [
-            "current liabilities",
-            "current liability",
-        ]
-    )
+STEP 1: Revaluation Gains
+"""
 
-    if ca is None or cl is None:
-        return None
+    if gains:
+        for name, amount in gains:
+            result += f"{name.title()} increased = {money(amount)}\n"
+    else:
+        result += "No revaluation gain identified.\n"
 
-    result = ca / cl
+    result += f"""
+Total Gain = {money(total_gain)}
 
-    return "\n".join([
-        "### Current Ratio",
-        "",
-        "Current Ratio = Current Assets / Current Liabilities",
-        f"= {money(ca)} / {money(cl)}",
-        f"= **{format_decimal(result)} : 1**",
-    ])
+STEP 2: Revaluation Losses
+"""
+
+    if losses:
+        for name, amount in losses:
+            result += f"{name.title()} decreased = {money(amount)}\n"
+    else:
+        result += "No revaluation loss identified.\n"
+
+    result += f"""
+Total Loss = {money(total_loss)}
+
+STEP 3: Revaluation Profit / Loss
+
+Revaluation Result
+= Total Gain - Total Loss
+
+= {money(total_gain)} - {money(total_loss)}
+
+= {money(abs(profit))}
+
+FINAL ANSWER:
+"""
+
+    if profit >= 0:
+        result += f"Revaluation Profit = {money(profit)}"
+    else:
+        result += f"Revaluation Loss = {money(abs(profit))}"
+
+    return result
 
 
-# ============================================================
-# QUICK RATIO
-# ============================================================
+# =========================================================
+# ACCOUNTING RATIOS
+# =========================================================
 
-def solve_quick_ratio(text):
+def solve_ratio(text):
+    n = normalize(text)
 
-    t = normalize(text)
-
-    if not any(
-        x in t
-        for x in [
-            "quick ratio",
-            "liquid ratio",
-            "acid test ratio",
-        ]
-    ):
-        return None
-
-    quick_assets = extract_labeled_number(
-        t,
-        [
-            "quick assets",
-            "liquid assets",
-            "quick asset",
-        ]
-    )
-
-    current_liabilities = extract_labeled_number(
-        t,
-        [
-            "current liabilities",
-            "current liability",
-        ]
-    )
-
-    if quick_assets is None:
-
-        current_assets = extract_labeled_number(
-            t,
-            [
-                "current assets",
-                "current asset",
-            ]
+    # Current Ratio
+    if "current ratio" in n:
+        ca = extract_labeled_number(
+            text,
+            ["current assets", "current asset"]
+        )
+        cl = extract_labeled_number(
+            text,
+            ["current liabilities", "current liability"]
         )
 
-        inventory = extract_labeled_number(
-            t,
-            [
-                "inventory",
-                "inventories",
-                "stock",
-            ]
-        )
+        if ca is not None and cl is not None:
+            r = safe_div(ca, cl)
 
+            return f"""DETAILED SOLUTION — CURRENT RATIO
+
+Formula:
+Current Ratio = Current Assets / Current Liabilities
+
+= {money(ca)} / {money(cl)}
+
+= {format_decimal(r)} : 1
+
+FINAL ANSWER:
+Current Ratio = {format_decimal(r)} : 1
+"""
+
+    # Quick Ratio
+    if "quick ratio" in n:
+        ca = extract_labeled_number(text, ["current assets"])
+        inv = extract_labeled_number(text, ["inventory", "inventories"])
         prepaid = extract_labeled_number(
-            t,
-            [
-                "prepaid expenses",
-                "prepaid expense",
-                "prepaid",
-            ]
+            text,
+            ["prepaid expenses", "prepaid expense"]
         )
+        cl = extract_labeled_number(text, ["current liabilities"])
 
-        if current_assets is not None:
+        if ca is not None and cl is not None:
+            quick_assets = ca
 
-            quick_assets = current_assets
-
-            if inventory is not None:
-                quick_assets -= inventory
+            if inv is not None:
+                quick_assets -= inv
 
             if prepaid is not None:
                 quick_assets -= prepaid
 
-    if (
-        quick_assets is None
-        or current_liabilities is None
-    ):
-        return None
+            r = safe_div(quick_assets, cl)
 
-    result = (
-        quick_assets
-        / current_liabilities
-    )
+            return f"""DETAILED SOLUTION — QUICK RATIO
 
-    return "\n".join([
-        "### Quick Ratio",
-        "",
-        "Quick Assets = Current Assets − Inventory − Prepaid Expenses",
-        f"Quick Assets = {money(quick_assets)}",
-        "",
-        "Quick Ratio = Quick Assets / Current Liabilities",
-        f"= {money(quick_assets)} / {money(current_liabilities)}",
-        f"= **{format_decimal(result)} : 1**",
-    ])
+Formula:
+Quick Assets = Current Assets - Inventory - Prepaid Expenses
 
+= {money(ca)} - {money(inv or 0)} - {money(prepaid or 0)}
 
-# ============================================================
-# DEBT EQUITY
-# ============================================================
+= {money(quick_assets)}
 
-def solve_debt_equity(text):
+Quick Ratio
+= Quick Assets / Current Liabilities
 
-    t = normalize(text)
+= {money(quick_assets)} / {money(cl)}
 
-    if "debt equity ratio" not in t:
-        return None
+= {format_decimal(r)} : 1
 
-    debt = extract_labeled_number(
-        t,
-        [
-            "long term debt",
-            "long-term debt",
-            "long term borrowings",
-            "long-term borrowings",
-            "debt",
-        ]
-    )
+FINAL ANSWER:
+Quick Ratio = {format_decimal(r)} : 1
+"""
 
-    equity = extract_labeled_number(
-        t,
-        [
-            "shareholders funds",
-            "shareholders' funds",
-            "shareholder funds",
-            "owners funds",
-            "proprietors funds",
-            "equity",
-        ]
-    )
-
-    if debt is None or equity is None:
-        return None
-
-    result = debt / equity
-
-    return "\n".join([
-        "### Debt-Equity Ratio",
-        "",
-        "Debt-Equity Ratio = Long-term Debt / Shareholders' Funds",
-        f"= {money(debt)} / {money(equity)}",
-        f"= **{format_decimal(result)} : 1**",
-    ])
-
-
-# ============================================================
-# TOTAL ASSETS TO DEBT
-# ============================================================
-
-def solve_total_assets_debt(text):
-
-    t = normalize(text)
-
-    if "total assets to debt" not in t:
-        return None
-
-    assets = extract_labeled_number(
-        t,
-        [
-            "total assets",
-            "total asset",
-        ]
-    )
-
-    debt = extract_labeled_number(
-        t,
-        [
-            "long term debt",
-            "long-term debt",
-            "debt",
-        ]
-    )
-
-    if assets is None or debt is None:
-        return None
-
-    result = assets / debt
-
-    return "\n".join([
-        "### Total Assets to Debt Ratio",
-        "",
-        "Ratio = Total Assets / Long-term Debt",
-        f"= {money(assets)} / {money(debt)}",
-        f"= **{format_decimal(result)} : 1**",
-    ])
-
-
-# ============================================================
-# PROPRIETARY RATIO
-# ============================================================
-
-def solve_proprietary_ratio(text):
-
-    t = normalize(text)
-
-    if "proprietary ratio" not in t:
-        return None
-
-    funds = extract_labeled_number(
-        t,
-        [
-            "shareholders funds",
-            "shareholders' funds",
-            "proprietors funds",
-            "proprietary funds",
-            "owners funds",
-        ]
-    )
-
-    assets = extract_labeled_number(
-        t,
-        [
-            "total assets",
-            "total asset",
-        ]
-    )
-
-    if funds is None or assets is None:
-        return None
-
-    result = funds / assets
-
-    return "\n".join([
-        "### Proprietary Ratio",
-        "",
-        "Proprietary Ratio = Shareholders' Funds / Total Assets",
-        f"= {money(funds)} / {money(assets)}",
-        f"= **{format_decimal(result)} : 1**",
-    ])
-
-
-# ============================================================
-# INTEREST COVERAGE
-# ============================================================
-
-def solve_interest_coverage(text):
-
-    t = normalize(text)
-
-    if "interest coverage ratio" not in t:
-        return None
-
-    ebit = extract_labeled_number(
-        t,
-        [
-            "profit before interest and tax",
-            "profit before interest & tax",
-            "ebit",
-        ]
-    )
-
-    interest = extract_labeled_number(
-        t,
-        [
-            "interest expense",
-            "interest",
-        ]
-    )
-
-    if ebit is None or interest is None:
-        return None
-
-    result = ebit / interest
-
-    return "\n".join([
-        "### Interest Coverage Ratio",
-        "",
-        "Interest Coverage Ratio = EBIT / Interest",
-        f"= {money(ebit)} / {money(interest)}",
-        f"= **{format_decimal(result)} times**",
-    ])
-
-
-# ============================================================
-# DEBT TO CAPITAL EMPLOYED
-# ============================================================
-
-def solve_debt_capital_employed(text):
-
-    t = normalize(text)
-
-    if "debt to capital employed" not in t:
-        return None
-
-    debt = extract_labeled_number(
-        t,
-        [
-            "long term debt",
-            "long-term debt",
-            "debt",
-        ]
-    )
-
-    capital = extract_capital_employed(t)
-
-    if debt is None or capital is None:
-        return None
-
-    result = debt / capital
-
-    return "\n".join([
-        "### Debt to Capital Employed Ratio",
-        "",
-        "Ratio = Long-term Debt / Capital Employed",
-        f"= {money(debt)} / {money(capital)}",
-        f"= **{format_decimal(result)} : 1**",
-    ])
-
-
-# ============================================================
-# INVENTORY TURNOVER
-# ============================================================
-
-def solve_inventory_turnover(text):
-
-    t = normalize(text)
-
-    if "inventory turnover" not in t:
-        return None
-
-    cost = extract_labeled_number(
-        t,
-        [
-            "cost of goods sold",
-            "cost of goods sold",
-            "cost of sales",
-            "cost of revenue",
-        ]
-    )
-
-    average_inventory = extract_labeled_number(
-        t,
-        [
-            "average inventory",
-            "average inventories",
-            "average stock",
-        ]
-    )
-
-    if average_inventory is None:
-
-        opening = extract_labeled_number(
-            t,
-            [
-                "opening inventory",
-                "opening stock",
-            ]
+    # Debt Equity
+    if "debt equity" in n or "debt-equity" in n:
+        debt = extract_labeled_number(
+            text,
+            ["long term debt", "long-term debt", "debt"]
+        )
+        equity = extract_labeled_number(
+            text,
+            ["shareholders funds", "shareholders' funds", "equity"]
         )
 
-        closing = extract_labeled_number(
-            t,
-            [
-                "closing inventory",
-                "closing stock",
-            ]
+        if debt is not None and equity is not None:
+            r = safe_div(debt, equity)
+
+            return f"""DETAILED SOLUTION — DEBT EQUITY RATIO
+
+Formula:
+Debt Equity Ratio = Long-term Debt / Shareholders' Funds
+
+= {money(debt)} / {money(equity)}
+
+= {format_decimal(r)} : 1
+
+FINAL ANSWER:
+Debt Equity Ratio = {format_decimal(r)} : 1
+"""
+
+    # Gross Profit Ratio
+    if "gross profit ratio" in n:
+        gp = extract_labeled_number(text, ["gross profit"])
+        sales = extract_labeled_number(text, ["revenue from operations", "sales"])
+
+        if gp is not None and sales is not None:
+            r = safe_div(gp * 100, sales)
+
+            return f"""DETAILED SOLUTION — GROSS PROFIT RATIO
+
+Formula:
+Gross Profit Ratio = Gross Profit / Revenue from Operations × 100
+
+= {money(gp)} / {money(sales)} × 100
+
+= {percentage(r)}
+
+FINAL ANSWER:
+Gross Profit Ratio = {percentage(r)}
+"""
+
+    # Net Profit Ratio
+    if "net profit ratio" in n:
+        np = extract_labeled_number(text, ["net profit"])
+        sales = extract_labeled_number(text, ["revenue from operations", "sales"])
+
+        if np is not None and sales is not None:
+            r = safe_div(np * 100, sales)
+
+            return f"""DETAILED SOLUTION — NET PROFIT RATIO
+
+Formula:
+Net Profit Ratio = Net Profit / Revenue from Operations × 100
+
+= {money(np)} / {money(sales)} × 100
+
+= {percentage(r)}
+
+FINAL ANSWER:
+Net Profit Ratio = {percentage(r)}
+"""
+
+    return None
+
+
+# =========================================================
+# SHARE CAPITAL
+# =========================================================
+
+def solve_share(text):
+    n = normalize(text)
+
+    if not any(x in n for x in [
+        "share capital",
+        "shares issued",
+        "shares allotted",
+        "oversubscription",
+        "forfeiture",
+        "reissue"
+    ]):
+        return None
+
+    # Oversubscription
+    if "oversubscription" in n or "oversubscribed" in n:
+        applied = extract_labeled_number(
+            text,
+            ["applied for", "applications for", "shares applied"]
         )
 
-        if (
-            opening is not None
-            and closing is not None
-        ):
-            average_inventory = (
-                opening
-                + closing
-            ) / 2
-
-    if (
-        cost is None
-        or average_inventory is None
-    ):
-        return None
-
-    result = (
-        cost
-        / average_inventory
-    )
-
-    return "\n".join([
-        "### Inventory Turnover Ratio",
-        "",
-        "Inventory Turnover Ratio = Cost of Goods Sold / Average Inventory",
-        f"= {money(cost)} / {money(average_inventory)}",
-        f"= **{format_decimal(result)} times**",
-    ])
-
-
-# ============================================================
-# RECEIVABLES TURNOVER
-# ============================================================
-
-def solve_receivables_turnover(text):
-
-    t = normalize(text)
-
-    if not any(
-        x in t
-        for x in [
-            "trade receivables turnover",
-            "receivables turnover",
-            "debtors turnover",
-        ]
-    ):
-        return None
-
-    sales = extract_labeled_number(
-        t,
-        [
-            "net credit sales",
-            "credit sales",
-            "credit revenue",
-        ]
-    )
-
-    avg = extract_labeled_number(
-        t,
-        [
-            "average trade receivables",
-            "average receivables",
-            "average debtors",
-        ]
-    )
-
-    if avg is None:
-
-        opening = extract_labeled_number(
-            t,
-            [
-                "opening trade receivables",
-                "opening receivables",
-                "opening debtors",
-            ]
+        issued = extract_labeled_number(
+            text,
+            ["issued", "shares issued", "offered"]
         )
 
-        closing = extract_labeled_number(
-            t,
-            [
-                "closing trade receivables",
-                "closing receivables",
-                "closing debtors",
-            ]
+        if applied is not None and issued is not None:
+            excess = applied - issued
+
+            return f"""DETAILED SOLUTION — OVERSUBSCRIPTION
+
+Shares applied for = {format_number(applied)}
+Shares issued/allotted = {format_number(issued)}
+
+Excess applications
+= Shares Applied - Shares Issued
+
+= {format_number(applied)} - {format_number(issued)}
+
+= {format_number(excess)} shares
+
+FINAL ANSWER:
+Excess applications = {format_number(excess)} shares
+"""
+
+    # Simple issue at premium
+    if "premium" in n and "share" in n:
+        face = extract_labeled_number(
+            text,
+            ["face value", "nominal value"]
+        )
+        premium = extract_labeled_number(
+            text,
+            ["premium"]
+        )
+        shares = extract_labeled_number(
+            text,
+            ["shares", "number of shares"]
         )
 
-        if (
-            opening is not None
-            and closing is not None
-        ):
-            avg = (
-                opening
-                + closing
-            ) / 2
+        if face is not None and premium is not None and shares is not None:
+            total_face = face * shares
+            total_premium = premium * shares
+            total = total_face + total_premium
 
-    if sales is None or avg is None:
-        return None
+            return f"""DETAILED SOLUTION — ISSUE OF SHARES AT PREMIUM
 
-    result = sales / avg
+Given:
+Number of Shares = {format_number(shares)}
+Face Value per Share = {money(face)}
+Premium per Share = {money(premium)}
 
-    return "\n".join([
-        "### Trade Receivables Turnover Ratio",
-        "",
-        "Ratio = Net Credit Sales / Average Trade Receivables",
-        f"= {money(sales)} / {money(avg)}",
-        f"= **{format_decimal(result)} times**",
-    ])
+Step 1: Share Capital
 
+= {format_number(shares)} × {money(face)}
 
-# ============================================================
-# PAYABLES TURNOVER
-# ============================================================
+= {money(total_face)}
 
-def solve_payables_turnover(text):
+Step 2: Securities Premium
 
-    t = normalize(text)
+= {format_number(shares)} × {money(premium)}
 
-    if not any(
-        x in t
-        for x in [
-            "trade payables turnover",
-            "payables turnover",
-            "creditors turnover",
-        ]
-    ):
-        return None
+= {money(total_premium)}
 
-    purchases = extract_labeled_number(
-        t,
-        [
-            "net credit purchases",
-            "credit purchases",
-        ]
-    )
+Step 3: Total Amount
 
-    avg = extract_labeled_number(
-        t,
-        [
-            "average trade payables",
-            "average payables",
-            "average creditors",
-        ]
-    )
+= {money(total_face)} + {money(total_premium)}
 
-    if avg is None:
+= {money(total)}
 
-        opening = extract_labeled_number(
-            t,
-            [
-                "opening trade payables",
-                "opening payables",
-                "opening creditors",
-            ]
-        )
+FINAL ANSWER:
+Share Capital = {money(total_face)}
+Securities Premium = {money(total_premium)}
+Total = {money(total)}
+"""
 
-        closing = extract_labeled_number(
-            t,
-            [
-                "closing trade payables",
-                "closing payables",
-                "closing creditors",
-            ]
-        )
+    return None
 
-        if (
-            opening is not None
-            and closing is not None
-        ):
-            avg = (
-                opening
-                + closing
-            ) / 2
 
-    if purchases is None or avg is None:
-        return None
-
-    result = purchases / avg
-
-    return "\n".join([
-        "### Trade Payables Turnover Ratio",
-        "",
-        "Ratio = Net Credit Purchases / Average Trade Payables",
-        f"= {money(purchases)} / {money(avg)}",
-        f"= **{format_decimal(result)} times**",
-    ])
-
-
-# ============================================================
-# FIXED ASSET TURNOVER
-# ============================================================
-
-def solve_fixed_asset_turnover(text):
-
-    t = normalize(text)
-
-    if "fixed asset turnover" not in t:
-        return None
-
-    revenue = extract_labeled_number(
-        t,
-        [
-            "revenue from operations",
-            "revenue",
-            "net sales",
-            "sales",
-        ]
-    )
-
-    assets = extract_labeled_number(
-        t,
-        [
-            "net fixed assets",
-            "fixed assets",
-            "fixed asset",
-        ]
-    )
-
-    if revenue is None or assets is None:
-        return None
-
-    result = revenue / assets
-
-    return "\n".join([
-        "### Fixed Asset Turnover Ratio",
-        "",
-        "Ratio = Revenue / Net Fixed Assets",
-        f"= {money(revenue)} / {money(assets)}",
-        f"= **{format_decimal(result)} times**",
-    ])
-
-
-# ============================================================
-# NET ASSET TURNOVER
-# ============================================================
-
-def solve_net_asset_turnover(text):
-
-    t = normalize(text)
-
-    if "net asset turnover" not in t:
-        return None
-
-    revenue = extract_labeled_number(
-        t,
-        [
-            "revenue from operations",
-            "revenue",
-            "sales",
-        ]
-    )
-
-    assets = extract_labeled_number(
-        t,
-        [
-            "net assets",
-            "net asset",
-        ]
-    )
-
-    if revenue is None or assets is None:
-        return None
-
-    result = revenue / assets
-
-    return "\n".join([
-        "### Net Asset Turnover Ratio",
-        "",
-        "Ratio = Revenue / Net Assets",
-        f"= {money(revenue)} / {money(assets)}",
-        f"= **{format_decimal(result)} times**",
-    ])
-
-
-# ============================================================
-# WORKING CAPITAL TURNOVER
-# ============================================================
-
-def solve_working_capital_turnover(text):
-
-    t = normalize(text)
-
-    if "working capital turnover" not in t:
-        return None
-
-    revenue = extract_labeled_number(
-        t,
-        [
-            "revenue from operations",
-            "revenue",
-            "sales",
-        ]
-    )
-
-    working_capital = extract_labeled_number(
-        t,
-        [
-            "working capital",
-        ]
-    )
-
-    if working_capital is None:
-
-        ca = extract_labeled_number(
-            t,
-            [
-                "current assets",
-            ]
-        )
-
-        cl = extract_labeled_number(
-            t,
-            [
-                "current liabilities",
-            ]
-        )
-
-        if (
-            ca is not None
-            and cl is not None
-        ):
-            working_capital = (
-                ca - cl
-            )
-
-    if (
-        revenue is None
-        or working_capital is None
-    ):
-        return None
-
-    result = (
-        revenue
-        / working_capital
-    )
-
-    return "\n".join([
-        "### Working Capital Turnover Ratio",
-        "",
-        f"Working Capital = {money(working_capital)}",
-        "",
-        "Working Capital Turnover Ratio = Revenue / Working Capital",
-        f"= {money(revenue)} / {money(working_capital)}",
-        f"= **{format_decimal(result)} times**",
-    ])
-
-
-# ============================================================
-# GROSS PROFIT RATIO
-# ============================================================
-
-def solve_gp_ratio(text):
-
-    t = normalize(text)
-
-    if "gross profit ratio" not in t:
-        return None
-
-    gp = extract_labeled_number(
-        t,
-        [
-            "gross profit",
-            "gross profits",
-        ]
-    )
-
-    revenue = extract_labeled_number(
-        t,
-        [
-            "revenue from operations",
-            "revenue",
-            "net sales",
-            "sales",
-        ]
-    )
-
-    if gp is None or revenue is None:
-        return None
-
-    result = (
-        gp
-        / revenue
-        * 100
-    )
-
-    return "\n".join([
-        "### Gross Profit Ratio",
-        "",
-        "Gross Profit Ratio = Gross Profit / Revenue × 100",
-        f"= {money(gp)} / {money(revenue)} × 100",
-        f"= **{percentage(result)}**",
-    ])
-
-
-# ============================================================
-# OPERATING RATIO
-# ============================================================
-
-def solve_operating_ratio(text):
-
-    t = normalize(text)
-
-    if "operating ratio" not in t:
-        return None
-
-    if "operating profit ratio" in t:
-        return None
-
-    cost = extract_labeled_number(
-        t,
-        [
-            "operating cost",
-            "operating costs",
-        ]
-    )
-
-    revenue = extract_labeled_number(
-        t,
-        [
-            "revenue from operations",
-            "revenue",
-            "sales",
-        ]
-    )
-
-    if cost is None or revenue is None:
-        return None
-
-    result = (
-        cost
-        / revenue
-        * 100
-    )
-
-    return "\n".join([
-        "### Operating Ratio",
-        "",
-        "Operating Ratio = Operating Cost / Revenue × 100",
-        f"= {money(cost)} / {money(revenue)} × 100",
-        f"= **{percentage(result)}**",
-    ])
-
-
-# ============================================================
-# OPERATING PROFIT RATIO
-# ============================================================
-
-def solve_operating_profit_ratio(text):
-
-    t = normalize(text)
-
-    if "operating profit ratio" not in t:
-        return None
-
-    profit = extract_labeled_number(
-        t,
-        [
-            "operating profit",
-            "operating profits",
-        ]
-    )
-
-    revenue = extract_labeled_number(
-        t,
-        [
-            "revenue from operations",
-            "revenue",
-            "sales",
-        ]
-    )
-
-    if profit is None or revenue is None:
-        return None
-
-    result = (
-        profit
-        / revenue
-        * 100
-    )
-
-    return "\n".join([
-        "### Operating Profit Ratio",
-        "",
-        "Operating Profit Ratio = Operating Profit / Revenue × 100",
-        f"= {money(profit)} / {money(revenue)} × 100",
-        f"= **{percentage(result)}**",
-    ])
-
-
-# ============================================================
-# NET PROFIT RATIO
-# ============================================================
-
-def solve_net_profit_ratio(text):
-
-    t = normalize(text)
-
-    if "net profit ratio" not in t:
-        return None
-
-    profit = extract_labeled_number(
-        t,
-        [
-            "net profit",
-            "net profits",
-        ]
-    )
-
-    revenue = extract_labeled_number(
-        t,
-        [
-            "revenue from operations",
-            "revenue",
-            "sales",
-        ]
-    )
-
-    if profit is None or revenue is None:
-        return None
-
-    result = (
-        profit
-        / revenue
-        * 100
-    )
-
-    return "\n".join([
-        "### Net Profit Ratio",
-        "",
-        "Net Profit Ratio = Net Profit / Revenue × 100",
-        f"= {money(profit)} / {money(revenue)} × 100",
-        f"= **{percentage(result)}**",
-    ])
-
-
-# ============================================================
-# ROI
-# ============================================================
-
-def solve_roi(text):
-
-    t = normalize(text)
-
-    if not any(
-        x in t
-        for x in [
-            "return on investment",
-            "return on capital employed",
-            "roi",
-        ]
-    ):
-        return None
-
-    profit = extract_labeled_number(
-        t,
-        [
-            "operating profit",
-            "profit before interest and tax",
-            "ebit",
-        ]
-    )
-
-    capital = extract_capital_employed(t)
-
-    if profit is None or capital is None:
-        return None
-
-    result = (
-        profit
-        / capital
-        * 100
-    )
-
-    return "\n".join([
-        "### Return on Investment",
-        "",
-        "ROI = Operating Profit / Capital Employed × 100",
-        f"= {money(profit)} / {money(capital)} × 100",
-        f"= **{percentage(result)}**",
-    ])
-
-
-# ============================================================
-# SHARE ISSUE
-# ============================================================
-
-def solve_share_issue(text):
-
-    t = normalize(text)
-
-    if not any(
-        x in t
-        for x in [
-            "shares",
-            "share capital",
-            "share issue",
-            "equity shares",
-        ]
-    ):
-        return None
-
-    if (
-        "ratio" in t
-        and "share capital" not in t
-    ):
-        return None
-
-    face = extract_labeled_number(
-        t,
-        [
-            "face value per share",
-            "nominal value per share",
-            "face value",
-            "nominal value",
-        ]
-    )
-
-    if face is None:
-
-        m = re.search(
-            rf"shares?\s+(?:of|at)"
-            rf"\s+(?:rupees\s*)?"
-            rf"({NUMBER_PATTERN})\s*each",
-            t
-        )
-
-        if m:
-            face = clean_number(
-                m.group(1)
-            )
-
-    issue_price = extract_labeled_number(
-        t,
-        [
-            "issue price per share",
-            "issue price",
-        ]
-    )
-
-    if issue_price is None:
-
-        m = re.search(
-            rf"issued?\s+(?:at|for)"
-            rf"\s+(?:rupees\s*)?"
-            rf"({NUMBER_PATTERN})"
-            rf"\s*per\s*share",
-            t
-        )
-
-        if m:
-            issue_price = clean_number(
-                m.group(1)
-            )
-
-    if face is None or issue_price is None:
-        return None
-
-    premium = (
-        issue_price
-        - face
-    )
-
-    lines = [
-        "### Share Issue",
-        "",
-        f"Face Value per Share = {money(face)}",
-        f"Issue Price per Share = {money(issue_price)}",
-        "",
-    ]
-
-    if premium > 0:
-
-        lines += [
-            "Share Premium = Issue Price − Face Value",
-            f"= {money(issue_price)} − {money(face)}",
-            f"= **{money(premium)} per share**",
-        ]
-
-    elif premium < 0:
-
-        lines += [
-            "Discount = Face Value − Issue Price",
-            f"= {money(face)} − {money(issue_price)}",
-            f"= **{money(abs(premium))} per share**",
-        ]
-
-    else:
-
-        lines.append(
-            "**Issued at Par**"
-        )
-
-    return "\n".join(lines)
-
-
-# ============================================================
-# OVERSUBSCRIPTION
-# ============================================================
-
-def solve_oversubscription(text):
-
-    t = normalize(text)
-
-    if (
-        "oversubscription" not in t
-        and "oversubscribed" not in t
-    ):
-        return None
-
-    offered = extract_labeled_number(
-        t,
-        [
-            "shares offered",
-            "shares issued",
-            "shares offered to public",
-        ]
-    )
-
-    applied = extract_labeled_number(
-        t,
-        [
-            "shares applied for",
-            "shares applied",
-            "applications received for",
-        ]
-    )
-
-    if offered is None or applied is None:
-        return None
-
-    excess = (
-        applied
-        - offered
-    )
-
-    ratio = (
-        applied
-        / offered
-    )
-
-    return "\n".join([
-        "### Oversubscription",
-        "",
-        f"Shares Applied = {format_number(applied)}",
-        f"Shares Offered = {format_number(offered)}",
-        "",
-        f"Oversubscription = **{format_number(excess)} shares**",
-        f"Subscription Ratio = **{format_decimal(ratio)} times**",
-    ])
-
-
-# ============================================================
-# FORFEITURE
-# ============================================================
-
-def solve_forfeiture(text):
-
-    t = normalize(text)
-
-    if (
-        "forfeit" not in t
-        and "forfeiture" not in t
-    ):
-        return None
-
-    called = extract_labeled_number(
-        t,
-        [
-            "called up",
-            "called-up",
-            "called",
-        ]
-    )
-
-    received = extract_labeled_number(
-        t,
-        [
-            "amount received",
-            "amount paid",
-            "amount already paid",
-            "paid up",
-        ]
-    )
-
-    if called is None or received is None:
-        return None
-
-    unpaid = (
-        called
-        - received
-    )
-
-    return "\n".join([
-        "### Forfeiture of Shares",
-        "",
-        f"Called-up Amount = {money(called)}",
-        f"Amount Received = {money(received)}",
-        f"Unpaid Amount = {money(unpaid)}",
-        "",
-        f"Share Forfeiture A/c = **{money(received)}**",
-    ])
-
-
-# ============================================================
-# REISSUE
-# ============================================================
-
-def solve_reissue(text):
-
-    t = normalize(text)
-
-    if (
-        "reissue" not in t
-        and "re-issued" not in t
-        and "re-issue" not in t
-    ):
-        return None
-
-    face = extract_labeled_number(
-        t,
-        [
-            "face value",
-            "nominal value",
-        ]
-    )
-
-    reissue_price = extract_labeled_number(
-        t,
-        [
-            "reissue price",
-            "reissued at",
-            "re-issue price",
-        ]
-    )
-
-    forfeited = extract_labeled_number(
-        t,
-        [
-            "amount forfeited",
-            "forfeited amount",
-            "share forfeiture",
-        ]
-    )
-
-    if face is None or reissue_price is None:
-        return None
-
-    discount = max(
-        face - reissue_price,
-        0
-    )
-
-    lines = [
-        "### Reissue of Forfeited Shares",
-        "",
-        f"Face Value = {money(face)}",
-        f"Reissue Price = {money(reissue_price)}",
-        f"Discount on Reissue = **{money(discount)}**",
-    ]
-
-    if forfeited is not None:
-
-        reserve = max(
-            forfeited
-            - discount,
-            0
-        )
-
-        lines += [
-            "",
-            f"Amount in Share Forfeiture A/c = {money(forfeited)}",
-            "",
-            "Capital Reserve = Share Forfeiture − Reissue Discount",
-            f"= {money(forfeited)} − {money(discount)}",
-            f"= **{money(reserve)}**",
-        ]
-
-    return "\n".join(lines)
-
-
-# ============================================================
+# =========================================================
 # DEBENTURES
-# ============================================================
+# =========================================================
 
 def solve_debenture(text):
+    n = normalize(text)
 
-    t = normalize(text)
-
-    if (
-        "debenture" not in t
-        and "debentures" not in t
-    ):
+    if "debenture" not in n:
         return None
+
+    number = extract_labeled_number(
+        text,
+        ["debentures", "number of debentures"]
+    )
 
     face = extract_labeled_number(
-        t,
-        [
-            "face value",
-            "nominal value",
-        ]
+        text,
+        ["face value", "nominal value"]
     )
 
-    issue_price = extract_labeled_number(
-        t,
-        [
-            "issue price",
-            "issued at",
-        ]
+    rate = extract_labeled_number(
+        text,
+        ["rate of interest", "interest rate"]
     )
 
-    rate = extract_percentage(t)
+    if number is not None and face is not None and rate is not None:
+        total = number * face
+        interest = total * rate / 100
 
-    lines = [
-        "### Debentures",
-        "",
-    ]
+        return f"""DETAILED SOLUTION — DEBENTURES
 
-    if face is not None:
+Given:
+Number of Debentures = {format_number(number)}
+Face Value = {money(face)}
+Rate of Interest = {format_number(rate)}%
 
-        lines.append(
-            f"Face Value = {money(face)}"
-        )
+Step 1: Total Debenture Value
 
-    if (
-        face is not None
-        and issue_price is not None
-    ):
+= Number of Debentures × Face Value
 
-        difference = (
-            issue_price
-            - face
-        )
+= {format_number(number)} × {money(face)}
 
-        if difference > 0:
+= {money(total)}
 
-            lines += [
-                f"Issue Price = {money(issue_price)}",
-                f"Premium = **{money(difference)}**",
-            ]
+Step 2: Annual Interest
 
-        elif difference < 0:
+Formula:
+Interest = Debenture Value × Rate / 100
 
-            lines += [
-                f"Issue Price = {money(issue_price)}",
-                f"Discount = **{money(abs(difference))}**",
-            ]
+= {money(total)} × {format_number(rate)} / 100
 
-        else:
+= {money(interest)}
 
-            lines.append(
-                "Issued at Par."
-            )
+FINAL ANSWER:
+Total Debenture Value = {money(total)}
+Annual Interest = {money(interest)}
+"""
 
-    if (
-        face is not None
-        and rate is not None
-    ):
-
-        interest = (
-            face
-            * rate
-            / 100
-        )
-
-        lines += [
-            "",
-            f"Interest Rate = {percentage(rate)}",
-            f"Annual Interest = {money(face)} × {format_decimal(rate)} / 100",
-            f"= **{money(interest)}**",
-        ]
-
-    if len(lines) <= 2:
-        return None
-
-    return "\n".join(lines)
+    return None
 
 
-# ============================================================
+# =========================================================
 # CASH FLOW
-# ============================================================
+# =========================================================
 
 def solve_cash_flow(text):
+    n = normalize(text)
 
-    t = normalize(text)
-
-    if not any(
-        x in t
-        for x in [
-            "cash flow",
-            "cash flows",
-            "cash flow statement",
-        ]
-    ):
+    if "cash flow" not in n:
         return None
 
     profit = extract_labeled_number(
-        t,
-        [
-            "profit after tax",
-            "profit after tax",
-            "net profit",
-            "profit",
-        ]
+        text,
+        ["net profit", "profit before tax", "profit"]
+    )
+
+    depreciation = extract_labeled_number(
+        text,
+        ["depreciation"]
+    )
+
+    gain = extract_labeled_number(
+        text,
+        ["profit on sale", "gain on sale"]
+    )
+
+    loss = extract_labeled_number(
+        text,
+        ["loss on sale"]
     )
 
     if profit is None:
         return None
 
-    depreciation = extract_labeled_number(
-        t,
-        [
-            "depreciation",
-            "depreciation charged",
-        ]
-    )
-
-    amortisation = extract_labeled_number(
-        t,
-        [
-            "amortisation",
-            "amortization",
-        ]
-    )
-
-    gain = extract_labeled_number(
-        t,
-        [
-            "gain on sale",
-            "profit on sale",
-            "profit on sale of asset",
-        ]
-    )
-
-    loss = extract_labeled_number(
-        t,
-        [
-            "loss on sale",
-            "loss on sale of asset",
-        ]
-    )
-
-    cfo = profit
-
-    lines = [
-        "### Cash Flow from Operating Activities",
-        "",
-        f"Profit = {money(profit)}",
-    ]
+    operating = profit
 
     if depreciation is not None:
-
-        cfo += depreciation
-
-        lines.append(
-            f"Add: Depreciation = {money(depreciation)}"
-        )
-
-    if amortisation is not None:
-
-        cfo += amortisation
-
-        lines.append(
-            f"Add: Amortisation = {money(amortisation)}"
-        )
+        operating += depreciation
 
     if gain is not None:
-
-        cfo -= gain
-
-        lines.append(
-            f"Less: Gain on Sale = {money(gain)}"
-        )
+        operating -= gain
 
     if loss is not None:
+        operating += loss
 
-        cfo += loss
+    return f"""DETAILED SOLUTION — CASH FLOW FROM OPERATING ACTIVITIES
 
-        lines.append(
-            f"Add: Loss on Sale = {money(loss)}"
-        )
+Starting point:
+Net Profit / Profit before Tax = {money(profit)}
 
-    lines += [
-        "",
-        f"Cash from Operating Activities before Working Capital Changes = **{money(cfo)}**",
-    ]
+Add: Depreciation = {money(depreciation or 0)}
+Less: Profit on Sale of Asset = {money(gain or 0)}
+Add: Loss on Sale of Asset = {money(loss or 0)}
 
-    return "\n".join(lines)
+Calculation:
+
+Cash from Operating Activities before working-capital adjustments
+
+= {money(profit)}
++ {money(depreciation or 0)}
+- {money(gain or 0)}
++ {money(loss or 0)}
+
+= {money(operating)}
+
+FINAL ANSWER:
+Cash Flow from Operating Activities before working-capital adjustments
+= {money(operating)}
+
+Note:
+This is the indirect-method adjustment section. Working-capital changes,
+tax and other required adjustments must be added separately when given.
+"""
 
 
-# ============================================================
-# MASTER LOCAL SOLVER
-# ============================================================
+# =========================================================
+# BASIC MATH
+# =========================================================
+
+def solve_basic_math(text):
+    original = str(text)
+
+    # Only attempt if it looks like a calculation
+    if not re.search(r"\d\s*[\+\-\*\/×÷]\s*\d", original):
+        return None
+
+    cleaned = original.replace("×", "*").replace("÷", "/")
+    cleaned = cleaned.replace(",", "")
+
+    m = re.search(
+        r"(?<![A-Za-z])(-?\d+(?:\.\d+)?)\s*([\+\-\*/])\s*(-?\d+(?:\.\d+)?)",
+        cleaned
+    )
+
+    if not m:
+        return None
+
+    a = float(m.group(1))
+    operator = m.group(2)
+    b = float(m.group(3))
+
+    expression = f"{a}{operator}{b}"
+    answer = safe_math(expression)
+
+    if answer is None:
+        return None
+
+    return f"""DETAILED CALCULATION
+
+Given:
+{m.group(0)}
+
+Working:
+{m.group(0)} = {format_number(answer)}
+
+FINAL ANSWER:
+{format_number(answer)}
+"""
+
+
+# =========================================================
+# LOCAL SOLVER DISPATCHER
+# =========================================================
 
 def local_solve(question):
-
-    q = question or ""
-
-    # --------------------------------------------------------
-    # BASIC MATH
-    # --------------------------------------------------------
-
-    result = basic_math_solver(q)
-
-    if result:
-        return result
-
-    # --------------------------------------------------------
-    # PARTNERSHIP
-    # --------------------------------------------------------
-
-    result = solve_admission(q)
-
-    if result:
-        return result
-
-    result = solve_retirement(q)
-
-    if result:
-        return result
-
-    result = solve_past_adjustment(q)
-
-    if result:
-        return result
-
-    result = solve_guarantee(q)
-
-    if result:
-        return result
-
-    result = solve_revaluation(q)
-
-    if result:
-        return result
-
-    result = solve_dissolution(q)
-
-    if result:
-        return result
-
-    result = solve_weighted_average_profit(q)
-
-    if result:
-        return result
-
-    result = solve_capitalisation_goodwill(q)
-
-    if result:
-        return result
-
-    result = solve_super_profit(q)
-
-    if result:
-        return result
-
-    result = solve_average_profit_goodwill(q)
-
-    if result:
-        return result
-
-    result = solve_normal_profit_question(q)
-
-    if result:
-        return result
-
-    result = solve_interest_on_capital(q)
-
-    if result:
-        return result
-
-    result = solve_interest_on_drawings(q)
-
-    if result:
-        return result
-
-    result = solve_partner_salary_commission(q)
-
-    if result:
-        return result
-
-    # --------------------------------------------------------
-    # RATIOS
-    # --------------------------------------------------------
-
-    result = solve_quick_ratio(q)
-
-    if result:
-        return result
-
-    result = solve_current_ratio(q)
-
-    if result:
-        return result
-
-    result = solve_debt_equity(q)
-
-    if result:
-        return result
-
-    result = solve_total_assets_debt(q)
-
-    if result:
-        return result
-
-    result = solve_proprietary_ratio(q)
-
-    if result:
-        return result
-
-    result = solve_interest_coverage(q)
-
-    if result:
-        return result
-
-    result = solve_debt_capital_employed(q)
-
-    if result:
-        return result
-
-    result = solve_inventory_turnover(q)
-
-    if result:
-        return result
-
-    result = solve_receivables_turnover(q)
-
-    if result:
-        return result
-
-    result = solve_payables_turnover(q)
-
-    if result:
-        return result
-
-    result = solve_fixed_asset_turnover(q)
-
-    if result:
-        return result
-
-    result = solve_net_asset_turnover(q)
-
-    if result:
-        return result
-
-    result = solve_working_capital_turnover(q)
-
-    if result:
-        return result
-
-    result = solve_gp_ratio(q)
-
-    if result:
-        return result
-
-    result = solve_operating_profit_ratio(q)
-
-    if result:
-        return result
-
-    result = solve_operating_ratio(q)
-
-    if result:
-        return result
-
-    result = solve_net_profit_ratio(q)
-
-    if result:
-        return result
-
-    result = solve_roi(q)
-
-    if result:
-        return result
-
-    # --------------------------------------------------------
-    # COMPANY ACCOUNTS
-    # --------------------------------------------------------
-
-    result = solve_forfeiture(q)
-
-    if result:
-        return result
-
-    result = solve_reissue(q)
-
-    if result:
-        return result
-
-    result = solve_oversubscription(q)
-
-    if result:
-        return result
-
-    result = solve_share_issue(q)
-
-    if result:
-        return result
-
-    result = solve_debenture(q)
-
-    if result:
-        return result
-
-    # --------------------------------------------------------
-    # CASH FLOW
-    # --------------------------------------------------------
-
-    result = solve_cash_flow(q)
-
-    if result:
-        return result
+    text = str(question)
+
+    # Most specific first
+    solvers = [
+        solve_admission,
+        solve_revaluation,
+        solve_goodwill_average,
+        solve_goodwill_super,
+        solve_goodwill_capitalisation,
+        solve_super_profit,
+        solve_ratio,
+        solve_share,
+        solve_debenture,
+        solve_cash_flow,
+        solve_basic_math,
+    ]
+
+    for solver in solvers:
+        try:
+            answer = solver(text)
+            if answer:
+                return answer
+        except Exception:
+            continue
 
     return None
 
 
-# ============================================================
-# AI FALLBACK
-# ============================================================
+# =========================================================
+# OPENAI FALLBACK
+# =========================================================
 
-def ai_solve(question, image_data=None):
-
-    api_key = os.environ.get(
-        "OPENAI_API_KEY"
-    )
-
-    if not api_key:
-
-        return {
-            "success": False,
-            "error": "OPENAI_API_KEY is not configured."
-        }
-
+def ai_solve(question, image=None):
     try:
-
         from openai import OpenAI
 
-        client = OpenAI(
-            api_key=api_key
-        )
+        api_key = os.environ.get("OPENAI_API_KEY")
 
-        system_prompt = """
-You are Commerce AI, an expert Class 12 CBSE Accountancy solver.
+        if not api_key:
+            return {
+                "answer": (
+                    "AI backend is not configured. "
+                    "Please set OPENAI_API_KEY in Vercel Environment Variables."
+                )
+            }
 
-Solve the complete question accurately.
+        client = OpenAI(api_key=api_key)
 
-IMPORTANT RULES:
+        prompt = """You are Commerce AI, an expert CBSE Class 12 Accountancy and Economics teacher.
 
-1. Read the entire question before solving.
-2. Identify the correct chapter and accounting method.
-3. Never ignore any condition given in the question.
-4. Show formula.
-5. Show substitution.
-6. Show calculations step by step.
-7. Give final answer clearly.
-8. Use Indian accounting terminology.
-9. Use ₹ for Indian currency.
-10. For partnership questions carefully calculate:
-   - old ratio
-   - new ratio
-   - sacrificing ratio
-   - gaining ratio
-   - goodwill
-   - revaluation
-   - reserves
-   - capital/current accounts
-   - journal entries
-11. For admission, if old partners change their ratio independently,
-    use the explicitly stated new ratio instead of assuming old ratio.
-12. For company accounts, give proper journal entries.
-13. For ratios, use the correct CBSE formula.
-14. For cash flow, classify items correctly.
-15. Do not invent missing information.
-16. If information is missing, clearly state what is missing.
-17. Give the final numerical answer in bold.
-"""
+Solve the student's question accurately.
 
-        content = []
+IMPORTANT:
+1. Give a detailed teacher-style solution.
+2. Start with GIVEN.
+3. Write the correct FORMULA.
+4. Substitute the numbers.
+5. Show calculations step-by-step.
+6. Explain important reasoning.
+7. Give FINAL ANSWER clearly.
+8. For partnership questions, show ratios/fractions clearly.
+9. For admission/retirement/death questions, calculate old ratio, new ratio, sacrificing/gaining ratio and goodwill treatment.
+10. For journal-entry questions, provide proper journal entries with Dr., Cr. and narration.
+11. For revaluation questions, prepare the required calculation clearly.
+12. For ratios, show numerator, denominator and formula.
+13. For cash flow, use the indirect method where applicable.
+14. Do not invent missing figures. If information is missing, clearly say what is missing.
+15. Use Indian accounting terminology and ₹.
 
-        if question:
+Return a clean, readable answer suitable for a Class 12 student."""
 
-            content.append({
+        content = [
+            {
                 "type": "input_text",
-                "text": question
-            })
+                "text": prompt + "\n\nSTUDENT QUESTION:\n" + str(question)
+            }
+        ]
 
-        if image_data:
-
+        if image:
             content.append({
                 "type": "input_image",
-                "image_url": image_data
+                "image_url": image
             })
 
         response = client.responses.create(
             model="gpt-5.6-luna",
             input=[
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
                 {
                     "role": "user",
                     "content": content
@@ -3785,204 +1387,139 @@ IMPORTANT RULES:
             ]
         )
 
-        answer = getattr(
-            response,
-            "output_text",
-            None
-        )
-
-        if not answer:
-            answer = str(response)
-
         return {
-            "success": True,
-            "answer": answer,
-            "source": "ai",
-            "api_used": True
+            "answer": response.output_text
         }
 
     except Exception as e:
-
         return {
-            "success": False,
-            "error": str(e),
-            "source": "ai",
-            "api_used": True
+            "error": str(e)
         }
 
 
-# ============================================================
-# HTTP HANDLER
-# ============================================================
+# =========================================================
+# HTTP HANDLER FOR VERCEL
+# =========================================================
 
 class Handler(BaseHTTPRequestHandler):
 
-    def send_json(
-        self,
-        data,
-        status=200
-    ):
-
+    def _send_json(self, data, status=200):
         body = json.dumps(
             data,
             ensure_ascii=False
         ).encode("utf-8")
 
         self.send_response(status)
-
-        self.send_header(
-            "Content-Type",
-            "application/json; charset=utf-8"
-        )
-
-        self.send_header(
-            "Access-Control-Allow-Origin",
-            "*"
-        )
-
-        self.send_header(
-            "Access-Control-Allow-Methods",
-            "POST, OPTIONS"
-        )
-
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header(
             "Access-Control-Allow-Headers",
-            "Content-Type"
+            "Content-Type, Authorization"
         )
-
         self.send_header(
-            "Content-Length",
-            str(len(body))
+            "Access-Control-Allow-Methods",
+            "GET, POST, OPTIONS"
         )
-
         self.end_headers()
 
         self.wfile.write(body)
 
     def do_OPTIONS(self):
-
-        self.send_json({
-            "success": True
-        })
+        self._send_json({"ok": True})
 
     def do_GET(self):
-
-        self.send_json({
-            "success": True,
-            "message": "Commerce AI Accountancy API is running."
+        self._send_json({
+            "ok": True,
+            "message": "Commerce AI backend is running."
         })
 
     def do_POST(self):
-
         try:
-
             content_length = int(
-                self.headers.get(
-                    "Content-Length",
-                    "0"
-                )
+                self.headers.get("Content-Length", "0")
             )
 
-            body = self.rfile.read(
-                content_length
-            )
+            raw = self.rfile.read(content_length)
 
             data = json.loads(
-                body.decode("utf-8")
+                raw.decode("utf-8")
             )
 
-            question = data.get(
-                "question",
-                ""
-            )
+            question = data.get("question", "")
+            image = data.get("image")
 
-            image = data.get(
-                "image",
-                None
-            )
-
-            if (
-                not question
-                and not image
-            ):
-
-                self.send_json(
+            if not question and not image:
+                self._send_json(
                     {
-                        "success": False,
                         "error": "Please provide a question or image."
                     },
                     400
                 )
-
                 return
 
-            # ------------------------------------------------
-            # LOCAL ENGINE FIRST
-            # ------------------------------------------------
+            # -------------------------------------------------
+            # 1. Try local detailed engine first
+            # -------------------------------------------------
+
+            local_answer = None
 
             if question:
+                local_answer = local_solve(question)
 
-                answer = local_solve(
-                    question
-                )
+            if local_answer:
+                self._send_json({
+                    "answer": local_answer,
+                    "source": "local_detailed_solver"
+                })
+                return
 
-                if answer:
+            # -------------------------------------------------
+            # 2. AI fallback
+            # -------------------------------------------------
 
-                    self.send_json({
-                        "success": True,
-                        "answer": answer,
-                        "source": "local",
-                        "api_used": False
-                    })
-
-                    return
-
-            # ------------------------------------------------
-            # AI FALLBACK
-            # ------------------------------------------------
-
-            result = ai_solve(
+            ai_result = ai_solve(
                 question,
                 image
             )
 
-            if result.get("success"):
+            if "error" in ai_result:
+                error_text = str(ai_result["error"])
 
-                self.send_json(
-                    result,
-                    200
-                )
+                # Friendly credit error
+                if (
+                    "credit" in error_text.lower()
+                    or "quota" in error_text.lower()
+                    or "429" in error_text
+                ):
+                    self._send_json({
+                        "error": (
+                            "AI credits are currently exhausted. "
+                            "The built-in Accountancy solver can still "
+                            "solve supported questions."
+                        )
+                    }, 429)
+                    return
 
-            else:
-
-                self.send_json(
-                    result,
+                self._send_json(
+                    ai_result,
                     500
                 )
+                return
+
+            self._send_json({
+                "answer": ai_result.get("answer", ""),
+                "source": "openai"
+            })
 
         except json.JSONDecodeError:
-
-            self.send_json(
-                {
-                    "success": False,
-                    "error": "Invalid JSON request."
-                },
-                400
-            )
+            self._send_json({
+                "error": "Invalid JSON request."
+            }, 400)
 
         except Exception as e:
+            self._send_json({
+                "error": str(e)
+            }, 500)
 
-            self.send_json(
-                {
-                    "success": False,
-                    "error": str(e)
-                },
-                500
-            )
-
-
-# ============================================================
-# VERCEL ENTRY POINT
-# ============================================================
 
 handler = Handler
