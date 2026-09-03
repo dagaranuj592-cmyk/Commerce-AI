@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler
 
 from openai import OpenAI
 
-from calculator import calculate
+from api.calculator import calculate
 
 
 # -----------------------------------
