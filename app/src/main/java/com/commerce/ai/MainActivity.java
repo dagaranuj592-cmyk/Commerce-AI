@@ -29,7 +29,6 @@ public class MainActivity extends Activity {
 
     private static final int PICK_IMAGE = 100;
 
-    // Vercel backend
     private static final String API_URL =
             "https://commerce-ai-seven.vercel.app/api/solve";
 
@@ -55,11 +54,13 @@ public class MainActivity extends Activity {
         title.setTextColor(Color.BLACK);
         title.setGravity(Gravity.CENTER);
 
-        mainLayout.addView(title,
+        mainLayout.addView(
+                title,
                 new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
-                ));
+                )
+        );
 
         TextView subtitle = new TextView(this);
         subtitle.setText("Accountancy & Economics Solver");
@@ -74,22 +75,26 @@ public class MainActivity extends Activity {
         photoButton.setText("📷  Upload Question Photo");
         photoButton.setTextSize(16);
 
-        mainLayout.addView(photoButton,
+        mainLayout.addView(
+                photoButton,
                 new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
-                ));
+                )
+        );
 
         questionImage = new ImageView(this);
         questionImage.setVisibility(ImageView.GONE);
         questionImage.setAdjustViewBounds(true);
         questionImage.setPadding(10, 15, 10, 15);
 
-        mainLayout.addView(questionImage,
+        mainLayout.addView(
+                questionImage,
                 new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         500
-                ));
+                )
+        );
 
         questionInput = new EditText(this);
         questionInput.setHint("Or type your question here...");
@@ -106,17 +111,22 @@ public class MainActivity extends Activity {
 
         inputParams.setMargins(0, 15, 0, 20);
 
-        mainLayout.addView(questionInput, inputParams);
+        mainLayout.addView(
+                questionInput,
+                inputParams
+        );
 
         Button solveButton = new Button(this);
         solveButton.setText("✨  Solve Question");
         solveButton.setTextSize(17);
 
-        mainLayout.addView(solveButton,
+        mainLayout.addView(
+                solveButton,
                 new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
-                ));
+                )
+        );
 
         result = new TextView(this);
         result.setText(
@@ -130,17 +140,24 @@ public class MainActivity extends Activity {
 
         setContentView(mainLayout);
 
-        photoButton.setOnClickListener(view -> openPhotoPicker());
+        photoButton.setOnClickListener(
+                view -> openPhotoPicker()
+        );
 
-        solveButton.setOnClickListener(view -> solveQuestion());
+        solveButton.setOnClickListener(
+                view -> solveQuestion()
+        );
     }
 
     private void solveQuestion() {
 
         String question =
-                questionInput.getText().toString().trim();
+                questionInput.getText()
+                        .toString()
+                        .trim();
 
-        if (question.isEmpty() && selectedImageUri == null) {
+        if (question.isEmpty()
+                && selectedImageUri == null) {
 
             Toast.makeText(
                     MainActivity.this,
@@ -151,7 +168,10 @@ public class MainActivity extends Activity {
             return;
         }
 
-        result.setText("⏳ AI question solve kar raha hai...\n\nPlease wait...");
+        result.setText(
+                "⏳ AI question solve kar raha hai...\n\n"
+                        + "Please wait..."
+        );
 
         new Thread(() -> {
 
@@ -160,39 +180,59 @@ public class MainActivity extends Activity {
                 String imageData = "";
 
                 if (selectedImageUri != null) {
-                    imageData = convertImageToBase64(selectedImageUri);
+
+                    imageData =
+                            convertImageToBase64(
+                                    selectedImageUri
+                            );
                 }
 
                 String json =
                         "{"
-                                + "\"question\":\"" + escapeJson(question) + "\","
-                                + "\"image\":\"" + escapeJson(imageData) + "\""
+                                + "\"question\":\""
+                                + escapeJson(question)
+                                + "\","
+                                + "\"image\":\""
+                                + escapeJson(imageData)
+                                + "\""
                                 + "}";
 
-                URL url = new URL(API_URL);
+                URL url =
+                        new URL(API_URL);
 
                 HttpURLConnection connection =
-                        (HttpURLConnection) url.openConnection();
+                        (HttpURLConnection)
+                                url.openConnection();
 
                 connection.setRequestMethod("POST");
+
                 connection.setRequestProperty(
                         "Content-Type",
                         "application/json"
                 );
+
                 connection.setRequestProperty(
                         "Accept",
                         "application/json"
                 );
 
                 connection.setDoOutput(true);
-                connection.setConnectTimeout(30000);
-                connection.setReadTimeout(120000);
+
+                connection.setConnectTimeout(
+                        30000
+                );
+
+                connection.setReadTimeout(
+                        120000
+                );
 
                 OutputStream outputStream =
                         connection.getOutputStream();
 
                 outputStream.write(
-                        json.getBytes(StandardCharsets.UTF_8)
+                        json.getBytes(
+                                StandardCharsets.UTF_8
+                        )
                 );
 
                 outputStream.flush();
@@ -203,10 +243,16 @@ public class MainActivity extends Activity {
 
                 InputStream inputStream;
 
-                if (responseCode >= 200 && responseCode < 300) {
-                    inputStream = connection.getInputStream();
+                if (responseCode >= 200
+                        && responseCode < 300) {
+
+                    inputStream =
+                            connection.getInputStream();
+
                 } else {
-                    inputStream = connection.getErrorStream();
+
+                    inputStream =
+                            connection.getErrorStream();
                 }
 
                 String response =
@@ -215,38 +261,63 @@ public class MainActivity extends Activity {
                 connection.disconnect();
 
                 String answer =
-                        extractJsonValue(response, "answer");
+                        extractJsonValue(
+                                response,
+                                "answer"
+                        );
 
                 String error =
-                        extractJsonValue(response, "error");
+                        extractJsonValue(
+                                response,
+                                "error"
+                        );
+
+                final String finalAnswer =
+                        answer;
+
+                final String finalError;
+
+                if (error.isEmpty()) {
+
+                    finalError =
+                            "Server error. Response code: "
+                                    + responseCode;
+
+                } else {
+
+                    finalError = error;
+                }
 
                 runOnUiThread(() -> {
 
                     if (responseCode >= 200
                             && responseCode < 300
-                            && !answer.isEmpty()) {
+                            && !finalAnswer.isEmpty()) {
 
-                        result.setText(answer);
+                        result.setText(
+                                finalAnswer
+                        );
 
                     } else {
 
-                        if (error.isEmpty()) {
-                            error = "Server error. Response code: "
-                                    + responseCode;
-                        }
-
                         result.setText(
-                                "❌ Error\n\n" + error
+                                "❌ Error\n\n"
+                                        + finalError
                         );
                     }
                 });
 
             } catch (Exception e) {
 
+                final String errorMessage =
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "Unknown connection error";
+
                 runOnUiThread(() ->
                         result.setText(
                                 "❌ Connection error\n\n"
-                                        + e.getMessage()
+                                        + errorMessage
                         )
                 );
             }
@@ -254,28 +325,35 @@ public class MainActivity extends Activity {
         }).start();
     }
 
-    private String convertImageToBase64(Uri uri)
-            throws Exception {
+    private String convertImageToBase64(
+            Uri uri
+    ) throws Exception {
 
         InputStream inputStream =
-                getContentResolver().openInputStream(uri);
+                getContentResolver()
+                        .openInputStream(uri);
 
         Bitmap bitmap =
-                BitmapFactory.decodeStream(inputStream);
+                BitmapFactory.decodeStream(
+                        inputStream
+                );
 
         inputStream.close();
 
         if (bitmap == null) {
-            throw new Exception("Image read nahi ho paayi.");
+
+            throw new Exception(
+                    "Image read nahi ho paayi."
+            );
         }
 
-        // Image ko chhota karke request size manageable rakhna
         int maxSize = 1600;
 
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
 
-        if (width > maxSize || height > maxSize) {
+        if (width > maxSize
+                || height > maxSize) {
 
             float scale =
                     Math.min(
@@ -289,12 +367,19 @@ public class MainActivity extends Activity {
             int newHeight =
                     Math.round(height * scale);
 
-            bitmap = Bitmap.createScaledBitmap(
-                    bitmap,
-                    newWidth,
-                    newHeight,
-                    true
-            );
+            Bitmap resized =
+                    Bitmap.createScaledBitmap(
+                            bitmap,
+                            newWidth,
+                            newHeight,
+                            true
+                    );
+
+            if (resized != bitmap) {
+                bitmap.recycle();
+            }
+
+            bitmap = resized;
         }
 
         ByteArrayOutputStream output =
@@ -308,7 +393,8 @@ public class MainActivity extends Activity {
 
         bitmap.recycle();
 
-        byte[] bytes = output.toByteArray();
+        byte[] bytes =
+                output.toByteArray();
 
         String base64 =
                 Base64.encodeToString(
@@ -316,25 +402,44 @@ public class MainActivity extends Activity {
                         Base64.NO_WRAP
                 );
 
-        return "data:image/jpeg;base64," + base64;
+        return "data:image/jpeg;base64,"
+                + base64;
     }
 
-    private String escapeJson(String text) {
+    private String escapeJson(
+            String text
+    ) {
 
         if (text == null) {
             return "";
         }
 
         return text
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t");
+                .replace(
+                        "\\",
+                        "\\\\"
+                )
+                .replace(
+                        "\"",
+                        "\\\""
+                )
+                .replace(
+                        "\n",
+                        "\\n"
+                )
+                .replace(
+                        "\r",
+                        "\\r"
+                )
+                .replace(
+                        "\t",
+                        "\\t"
+                );
     }
 
-    private String readStream(InputStream inputStream)
-            throws Exception {
+    private String readStream(
+            InputStream inputStream
+    ) throws Exception {
 
         if (inputStream == null) {
             return "";
@@ -343,11 +448,16 @@ public class MainActivity extends Activity {
         ByteArrayOutputStream output =
                 new ByteArrayOutputStream();
 
-        byte[] buffer = new byte[4096];
+        byte[] buffer =
+                new byte[4096];
 
         int length;
 
-        while ((length = inputStream.read(buffer)) != -1) {
+        while (
+                (length =
+                        inputStream.read(buffer))
+                        != -1
+        ) {
 
             output.write(
                     buffer,
@@ -365,9 +475,12 @@ public class MainActivity extends Activity {
 
     private String extractJsonValue(
             String json,
-            String key) {
+            String key
+    ) {
 
-        if (json == null || json.isEmpty()) {
+        if (json == null
+                || json.isEmpty()) {
+
             return "";
         }
 
@@ -406,9 +519,11 @@ public class MainActivity extends Activity {
 
         boolean escaped = false;
 
-        for (int i = firstQuote + 1;
-             i < json.length();
-             i++) {
+        for (
+                int i = firstQuote + 1;
+                i < json.length();
+                i++
+        ) {
 
             char c = json.charAt(i);
 
@@ -463,7 +578,9 @@ public class MainActivity extends Activity {
     private void openPhotoPicker() {
 
         Intent intent =
-                new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                new Intent(
+                        Intent.ACTION_OPEN_DOCUMENT
+                );
 
         intent.addCategory(
                 Intent.CATEGORY_OPENABLE
@@ -481,7 +598,8 @@ public class MainActivity extends Activity {
     protected void onActivityResult(
             int requestCode,
             int resultCode,
-            Intent data) {
+            Intent data
+    ) {
 
         super.onActivityResult(
                 requestCode,
@@ -493,11 +611,13 @@ public class MainActivity extends Activity {
                 && resultCode == RESULT_OK
                 && data != null) {
 
-            Uri imageUri = data.getData();
+            Uri imageUri =
+                    data.getData();
 
             if (imageUri != null) {
 
-                selectedImageUri = imageUri;
+                selectedImageUri =
+                        imageUri;
 
                 questionImage.setImageURI(
                         imageUri
@@ -515,4 +635,4 @@ public class MainActivity extends Activity {
             }
         }
     }
-}
+                    }
