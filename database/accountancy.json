@@ -1,0 +1,359 @@
+{
+  "subject": "Accountancy",
+  "version": "1.0",
+
+  "chapters": {
+
+    "partnership_basics": {
+      "name": "Partnership Fundamentals",
+
+      "formulas": {
+
+        "profit_sharing_ratio": {
+          "formula": "Profit Share = Total Profit × Partner's Ratio / Total Ratio",
+          "use_when": "Partners share profit in a given ratio"
+        },
+
+        "interest_on_capital": {
+          "formula": "Interest on Capital = Capital × Rate × Time / 100",
+          "use_when": "Interest on capital is allowed"
+        },
+
+        "interest_on_drawings": {
+          "formula": "Interest on Drawings = Drawings × Rate × Time / 100",
+          "use_when": "Interest is charged on partner's drawings"
+        },
+
+        "commission_on_profit": {
+          "formula": "Commission = Profit × Rate / 100",
+          "use_when": "Commission is calculated on profit"
+        }
+      }
+    },
+
+    "goodwill": {
+      "name": "Goodwill",
+
+      "formulas": {
+
+        "average_profit": {
+          "formula": "Average Profit = Sum of Profits / Number of Years",
+          "use_when": "Average Profit Method"
+        },
+
+        "goodwill_average_profit": {
+          "formula": "Goodwill = Average Profit × Number of Years' Purchase",
+          "use_when": "Goodwill under Average Profit Method"
+        },
+
+        "super_profit": {
+          "formula": "Super Profit = Average Profit − Normal Profit",
+          "use_when": "Super Profit Method"
+        },
+
+        "normal_profit": {
+          "formula": "Normal Profit = Capital Employed × Normal Rate of Return / 100",
+          "use_when": "Super Profit Method"
+        },
+
+        "goodwill_super_profit": {
+          "formula": "Goodwill = Super Profit × Number of Years' Purchase",
+          "use_when": "Goodwill under Super Profit Method"
+        },
+
+        "capitalised_value": {
+          "formula": "Capitalised Value = Average Profit × 100 / Normal Rate of Return",
+          "use_when": "Capitalisation of Average Profit Method"
+        },
+
+        "goodwill_capitalisation": {
+          "formula": "Goodwill = Capitalised Value − Actual Capital Employed",
+          "use_when": "Capitalisation Method"
+        },
+
+        "capitalised_super_profit": {
+          "formula": "Goodwill = Super Profit × 100 / Normal Rate of Return",
+          "use_when": "Capitalisation of Super Profit Method"
+        }
+      }
+    },
+
+    "admission_of_partner": {
+      "name": "Admission of a Partner",
+
+      "formulas": {
+
+        "sacrificing_ratio": {
+          "formula": "Sacrificing Ratio = Old Ratio − New Ratio",
+          "use_when": "Calculating sacrifice made by old partners"
+        },
+
+        "new_ratio": {
+          "formula": "New Ratio = Old Ratio − Sacrificing Share",
+          "use_when": "Finding new profit sharing ratio"
+        },
+
+        "premium_for_goodwill": {
+          "formula": "New Partner's Share of Goodwill = Total Goodwill × New Partner's Share",
+          "use_when": "New partner brings goodwill"
+        }
+      }
+    },
+
+    "retirement_of_partner": {
+      "name": "Retirement of a Partner",
+
+      "formulas": {
+
+        "gaining_ratio": {
+          "formula": "Gaining Ratio = New Ratio − Old Ratio",
+          "use_when": "Calculating gain of continuing partners"
+        },
+
+        "retiring_partner_goodwill": {
+          "formula": "Retiring Partner's Share of Goodwill = Total Goodwill × Retiring Partner's Share",
+          "use_when": "Goodwill adjustment on retirement"
+        }
+      }
+    },
+
+    "death_of_partner": {
+      "name": "Death of a Partner",
+
+      "formulas": {
+
+        "profit_until_death": {
+          "formula": "Profit up to Death = Estimated Annual Profit × Months Worked / 12",
+          "use_when": "Profit is based on time"
+        },
+
+        "share_of_profit": {
+          "formula": "Deceased Partner's Share = Profit up to Death × Profit Sharing Ratio",
+          "use_when": "Calculating deceased partner's profit share"
+        }
+      }
+    },
+
+    "change_in_profit_sharing_ratio": {
+      "name": "Change in Profit Sharing Ratio",
+
+      "formulas": {
+
+        "sacrificing_ratio": {
+          "formula": "Sacrificing Ratio = Old Ratio − New Ratio",
+          "use_when": "Partner sacrifices share"
+        },
+
+        "gaining_ratio": {
+          "formula": "Gaining Ratio = New Ratio − Old Ratio",
+          "use_when": "Partner gains share"
+        }
+      }
+    },
+
+    "dissolution": {
+      "name": "Dissolution of Partnership Firm",
+
+      "formulas": {
+
+        "realisation_profit": {
+          "formula": "Profit on Realisation = Credit of Realisation A/c − Debit of Realisation A/c",
+          "use_when": "Realisation Account gives profit"
+        },
+
+        "realisation_loss": {
+          "formula": "Loss on Realisation = Debit of Realisation A/c − Credit of Realisation A/c",
+          "use_when": "Realisation Account gives loss"
+        },
+
+        "partner_realisation_share": {
+          "formula": "Partner's Share = Realisation Profit/Loss × Partner's Profit Sharing Ratio",
+          "use_when": "Distribution among partners"
+        }
+      }
+    },
+
+    "company_shares": {
+      "name": "Accounting for Share Capital",
+
+      "formulas": {
+
+        "share_application": {
+          "formula": "Application Money = Number of Shares Applied × Application Amount per Share",
+          "use_when": "Calculating application money"
+        },
+
+        "share_allotment": {
+          "formula": "Allotment Money = Number of Shares Allotted × Allotment Amount per Share",
+          "use_when": "Calculating allotment money"
+        },
+
+        "share_call": {
+          "formula": "Call Money = Number of Shares × Call Amount per Share",
+          "use_when": "Calculating call money"
+        },
+
+        "securities_premium": {
+          "formula": "Securities Premium = Number of Shares × Premium per Share",
+          "use_when": "Shares issued at premium"
+        }
+      }
+    },
+
+    "forfeiture_and_reissue": {
+      "name": "Forfeiture and Reissue of Shares",
+
+      "formulas": {
+
+        "amount_forfeited": {
+          "formula": "Amount Forfeited = Amount Received on Forfeited Shares",
+          "use_when": "Calculating Share Forfeiture Account"
+        },
+
+        "capital_reserve": {
+          "formula": "Capital Reserve = Forfeited Amount − Discount on Reissue",
+          "use_when": "Profit on reissue of forfeited shares"
+        }
+      }
+    },
+
+    "debentures": {
+      "name": "Issue of Debentures",
+
+      "formulas": {
+
+        "debenture_interest": {
+          "formula": "Debenture Interest = Face Value × Rate × Time / 100",
+          "use_when": "Calculating interest on debentures"
+        },
+
+        "discount_on_issue": {
+          "formula": "Discount = Face Value − Issue Price",
+          "use_when": "Debentures issued at discount"
+        },
+
+        "premium_on_redemption": {
+          "formula": "Premium on Redemption = Redemption Value − Face Value",
+          "use_when": "Debentures redeemed at premium"
+        }
+      }
+    },
+
+    "financial_statements": {
+      "name": "Financial Statements",
+
+      "formulas": {
+
+        "gross_profit": {
+          "formula": "Gross Profit = Revenue from Operations − Cost of Revenue",
+          "use_when": "Finding gross profit"
+        },
+
+        "gross_loss": {
+          "formula": "Gross Loss = Cost of Revenue − Revenue from Operations",
+          "use_when": "Finding gross loss"
+        },
+
+        "operating_profit": {
+          "formula": "Operating Profit = Gross Profit + Operating Income − Operating Expenses",
+          "use_when": "Finding operating profit"
+        },
+
+        "net_profit": {
+          "formula": "Net Profit = Operating Profit + Non-operating Income − Non-operating Expenses",
+          "use_when": "Finding net profit"
+        }
+      }
+    },
+
+    "accounting_ratios": {
+      "name": "Accounting Ratios",
+
+      "formulas": {
+
+        "current_ratio": {
+          "formula": "Current Ratio = Current Assets / Current Liabilities",
+          "standard": "2:1",
+          "use_when": "Measuring short-term liquidity"
+        },
+
+        "quick_ratio": {
+          "formula": "Quick Ratio = Quick Assets / Current Liabilities",
+          "standard": "1:1",
+          "use_when": "Measuring immediate liquidity"
+        },
+
+        "debt_equity_ratio": {
+          "formula": "Debt Equity Ratio = Long-term Debt / Shareholders' Funds",
+          "use_when": "Measuring long-term solvency"
+        },
+
+        "gross_profit_ratio": {
+          "formula": "Gross Profit Ratio = Gross Profit / Revenue from Operations × 100",
+          "use_when": "Measuring gross profitability"
+        },
+
+        "net_profit_ratio": {
+          "formula": "Net Profit Ratio = Net Profit / Revenue from Operations × 100",
+          "use_when": "Measuring net profitability"
+        },
+
+        "operating_ratio": {
+          "formula": "Operating Ratio = (Cost of Revenue + Operating Expenses) / Revenue from Operations × 100",
+          "use_when": "Measuring operating efficiency"
+        },
+
+        "operating_profit_ratio": {
+          "formula": "Operating Profit Ratio = Operating Profit / Revenue from Operations × 100",
+          "use_when": "Measuring operating profitability"
+        },
+
+        "return_on_investment": {
+          "formula": "ROI = Operating Profit / Capital Employed × 100",
+          "use_when": "Measuring return on capital employed"
+        }
+      }
+    },
+
+    "cash_flow": {
+      "name": "Cash Flow Statement",
+
+      "formulas": {
+
+        "cash_from_operations": {
+          "formula": "Cash from Operating Activities = Net Profit before Tax + Non-cash Expenses + Non-operating Expenses − Non-operating Incomes ± Working Capital Changes",
+          "use_when": "Indirect method of operating cash flow"
+        },
+
+        "working_capital_change": {
+          "formula": "Increase in Current Asset = Deduct; Decrease in Current Asset = Add; Increase in Current Liability = Add; Decrease in Current Liability = Deduct",
+          "use_when": "Working capital adjustment"
+        },
+
+        "net_change_cash": {
+          "formula": "Net Change in Cash = Operating Cash Flow + Investing Cash Flow + Financing Cash Flow",
+          "use_when": "Finding change in cash and cash equivalents"
+        }
+      }
+    },
+
+    "common_rules": {
+      "name": "Common Accounting Rules",
+
+      "rules": {
+
+        "asset": "Increase in Asset is generally Debit; decrease is generally Credit",
+
+        "liability": "Increase in Liability is generally Credit; decrease is generally Debit",
+
+        "expense": "Expense is generally Debit",
+
+        "income": "Income is generally Credit",
+
+        "capital": "Increase in Capital is Credit; decrease in Capital is Debit",
+
+        "drawings": "Drawings are Debit"
+      }
+    }
+  }
+}
