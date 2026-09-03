@@ -34,14 +34,17 @@ PATTERN_DATABASE_PATH = os.path.join(
 def load_database():
 
     try:
+
         with open(
             PATTERN_DATABASE_PATH,
             "r",
             encoding="utf-8"
         ) as f:
+
             return json.load(f)
 
     except Exception:
+
         return {"patterns": []}
 
 
@@ -179,6 +182,7 @@ def extract_percentage(text):
         )
 
         if match:
+
             return clean_number(
                 match.group(1)
             )
@@ -235,6 +239,39 @@ def extract_labeled_number(
             r"(?:is|are|=|of)?"
             r"\s*(?:₹\s*)?"
             r"([\d,]+(?:\.\d+)?)"
+        )
+
+        match = re.search(
+            pattern,
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+
+            return clean_number(
+                match.group(1)
+            )
+
+    return None
+
+
+# =========================================================
+# AMOUNT BEFORE PHRASE
+# =========================================================
+
+def extract_amount_before_phrase(
+    text,
+    phrases
+):
+
+    for phrase in phrases:
+
+        pattern = (
+            r"(?:₹\s*)?"
+            r"([\d,]+(?:\.\d+)?)"
+            r"\s*(?:as|for|towards|of)?\s*"
+            + re.escape(phrase)
         )
 
         match = re.search(
@@ -323,7 +360,10 @@ def extract_historical_profits(text):
 
         value = clean_number(number)
 
-        if value is not None and value >= 1000:
+        if (
+            value is not None
+            and value >= 1000
+        ):
 
             result.append(value)
 
@@ -331,7 +371,7 @@ def extract_historical_profits(text):
 
 
 # =========================================================
-# RATIO PARSER
+# RATIO / FRACTION HELPERS
 # =========================================================
 
 def extract_first_ratio(text):
@@ -389,6 +429,7 @@ def extract_fraction_share(text):
 
         r"(\d+(?:\.\d+)?)\s*/\s*"
         r"(\d+(?:\.\d+)?)"
+
     ]
 
     for pattern in patterns:
@@ -447,6 +488,7 @@ def safe_math(node):
             node.value,
             (int, float)
         ):
+
             return node.value
 
         raise ValueError()
@@ -499,7 +541,6 @@ def solve_basic_math(question):
 
     q = question.strip()
 
-    # Convert common symbols
     q = q.replace("×", "*")
     q = q.replace("x", "*")
     q = q.replace("X", "*")
@@ -507,7 +548,6 @@ def solve_basic_math(question):
     q = q.replace("−", "-")
     q = q.replace("–", "-")
 
-    # Remove common words around simple arithmetic
     q = re.sub(
         r"^(calculate|solve|find)\s+",
         "",
@@ -517,22 +557,26 @@ def solve_basic_math(question):
 
     q = q.strip()
 
-    # Only allow a simple arithmetic expression
     if not re.fullmatch(
-        r"[\d\s\+\-\*\/\(\)\.\^]+",
+        r"[\d\s\+\-\*\/\.\^]+",
         q
     ):
+
         return None
 
     if not re.search(
         r"[\+\-\*\/]",
         q
     ):
+
         return None
 
     try:
 
-        q = q.replace("^", "**")
+        q = q.replace(
+            "^",
+            "**"
+        )
 
         tree = ast.parse(
             q,
@@ -560,7 +604,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 0. BASIC MATH
+    # BASIC MATH
     # =====================================================
 
     basic_result = solve_basic_math(
@@ -570,18 +614,27 @@ def local_solve(question):
     if basic_result is not None:
 
         return {
+
             "success": True,
-            "title": "Basic Calculation",
-            "value": basic_result,
+
+            "title":
+                "Basic Calculation",
+
+            "value":
+                basic_result,
+
             "steps": [
+
                 f"{question.strip()} = "
                 f"{format_decimal(basic_result)}"
+
             ]
+
         }
 
 
     # =====================================================
-    # 1. ADMISSION OF PARTNER
+    # ADMISSION OF PARTNER
     # =====================================================
 
     if (
@@ -608,7 +661,8 @@ def local_solve(question):
             numerator, denominator = new_share
 
             c_share = (
-                numerator / denominator
+                numerator
+                / denominator
             )
 
             remaining_share = (
@@ -616,7 +670,8 @@ def local_solve(question):
             )
 
             total_old = (
-                old_a + old_b
+                old_a
+                + old_b
             )
 
             new_a = (
@@ -658,8 +713,7 @@ def local_solve(question):
                 "",
 
                 "Remaining Share for Old Partners = "
-                + "1 − "
-                + format_decimal(c_share),
+                "1 − New Partner's Share",
 
                 "Remaining Share = "
                 + format_decimal(
@@ -740,103 +794,130 @@ def local_solve(question):
                     sacrifice_a,
                     sacrifice_b
                 )
+
             ]
 
 
-            # Goodwill premium
-            goodwill = extract_labeled_number(
+            # =================================================
+            # GOODWILL PREMIUM
+            # =================================================
+
+            goodwill = extract_amount_before_phrase(
                 question,
                 [
+                    "as goodwill premium",
+                    "as premium for goodwill",
                     "goodwill premium",
-                    "premium for goodwill",
-                    "goodwill"
+                    "premium for goodwill"
                 ]
             )
 
+            if goodwill is None:
+
+                goodwill = extract_labeled_number(
+                    question,
+                    [
+                        "goodwill premium",
+                        "premium for goodwill",
+                        "goodwill"
+                    ]
+                )
+
+
             if goodwill is not None:
 
-                amount_a = (
-                    goodwill
-                    * sacrifice_a
-                    / (
-                        sacrifice_a
-                        + sacrifice_b
-                    )
+                total_sacrifice = (
+                    sacrifice_a
+                    + sacrifice_b
                 )
 
-                amount_b = (
-                    goodwill
-                    * sacrifice_b
-                    / (
-                        sacrifice_a
-                        + sacrifice_b
-                    )
-                )
+                if total_sacrifice != 0:
 
-                steps.extend([
-
-                    "",
-
-                    "Goodwill Premium = ₹"
-                    + format_number(
+                    amount_a = (
                         goodwill
-                    ),
-
-                    "A's Share of Goodwill = ₹"
-                    + format_number(
-                        amount_a
-                    ),
-
-                    "B's Share of Goodwill = ₹"
-                    + format_number(
-                        amount_b
-                    ),
-
-                    "",
-
-                    "Journal Entry:",
-
-                    "Bank A/c Dr. ₹"
-                    + format_number(
-                        goodwill
-                    ),
-
-                    "    To Premium for Goodwill A/c ₹"
-                    + format_number(
-                        goodwill
-                    ),
-
-                    "",
-
-                    "Premium for Goodwill A/c Dr. ₹"
-                    + format_number(
-                        goodwill
-                    ),
-
-                    "    To A's Capital A/c ₹"
-                    + format_number(
-                        amount_a
-                    ),
-
-                    "    To B's Capital A/c ₹"
-                    + format_number(
-                        amount_b
+                        * sacrifice_a
+                        / total_sacrifice
                     )
 
-                ])
+                    amount_b = (
+                        goodwill
+                        * sacrifice_b
+                        / total_sacrifice
+                    )
+
+                    steps.extend([
+
+                        "",
+
+                        "Goodwill Premium = ₹"
+                        + format_number(
+                            goodwill
+                        ),
+
+                        "A's Share of Goodwill = ₹"
+                        + format_number(
+                            amount_a
+                        ),
+
+                        "B's Share of Goodwill = ₹"
+                        + format_number(
+                            amount_b
+                        ),
+
+                        "",
+
+                        "Journal Entry 1:",
+
+                        "Bank A/c Dr. ₹"
+                        + format_number(
+                            goodwill
+                        ),
+
+                        "    To Premium for Goodwill A/c ₹"
+                        + format_number(
+                            goodwill
+                        ),
+
+                        "",
+
+                        "Journal Entry 2:",
+
+                        "Premium for Goodwill A/c Dr. ₹"
+                        + format_number(
+                            goodwill
+                        ),
+
+                        "    To A's Capital A/c ₹"
+                        + format_number(
+                            amount_a
+                        ),
+
+                        "    To B's Capital A/c ₹"
+                        + format_number(
+                            amount_b
+                        )
+
+                    ])
 
 
             return {
+
                 "success": True,
+
                 "title":
                     "Admission of Partner",
-                "value": None,
-                "steps": steps
+
+                "value":
+                    None,
+
+                "steps":
+                    steps
+
             }
 
 
     # =====================================================
-    # 2. HISTORICAL PROFITS GOODWILL
+    # HISTORICAL PROFITS + GOODWILL
     # =====================================================
 
     if (
@@ -878,7 +959,8 @@ def local_solve(question):
             total = sum(profits)
 
             average = (
-                total / len(profits)
+                total
+                / len(profits)
             )
 
             normal = (
@@ -924,9 +1006,7 @@ def local_solve(question):
                     "Total Profit ÷ Number of Years",
 
                     "Average Profit = ₹"
-                    + format_number(
-                        average
-                    ),
+                    + format_number(average),
 
                     "",
 
@@ -934,9 +1014,7 @@ def local_solve(question):
                     "Capital Employed × Rate ÷ 100",
 
                     "Normal Profit = ₹"
-                    + format_number(
-                        normal
-                    ),
+                    + format_number(normal),
 
                     "",
 
@@ -968,11 +1046,12 @@ def local_solve(question):
                     )
 
                 ]
+
             }
 
 
     # =====================================================
-    # 3. AVERAGE PROFIT GOODWILL
+    # GOODWILL - AVERAGE PROFIT
     # =====================================================
 
     if (
@@ -1008,7 +1087,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 4. SUPER PROFIT
+    # SUPER PROFIT
     # =====================================================
 
     if "super profit" in q:
@@ -1077,7 +1156,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 5. CURRENT RATIO
+    # CURRENT RATIO
     # =====================================================
 
     if "current ratio" in q:
@@ -1116,7 +1195,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 6. QUICK RATIO
+    # QUICK RATIO
     # =====================================================
 
     if (
@@ -1159,7 +1238,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 7. DEBT-EQUITY RATIO
+    # DEBT-EQUITY RATIO
     # =====================================================
 
     if (
@@ -1203,7 +1282,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 8. DEBT RATIO
+    # DEBT RATIO
     # =====================================================
 
     if (
@@ -1265,16 +1344,15 @@ def local_solve(question):
                     + "%"
 
                 ]
+
             }
 
 
     # =====================================================
-    # 9. PROPRIETARY RATIO
+    # PROPRIETARY RATIO
     # =====================================================
 
-    if (
-        "proprietary ratio" in q
-    ):
+    if "proprietary ratio" in q:
 
         assets = extract_labeled_number(
             question,
@@ -1292,38 +1370,32 @@ def local_solve(question):
             ]
         )
 
-        reserves = extract_labeled_number(
-            question,
-            [
-                "reserve",
-                "reserves"
-            ]
-        )
-
-        surplus = extract_labeled_number(
-            question,
-            [
-                "surplus"
-            ]
-        )
-
         if (
             assets is not None
             and debt is not None
+            and assets != 0
         ):
 
             shareholders_funds = (
                 assets - debt
             )
 
-            if assets != 0:
+            ratio = (
+                shareholders_funds
+                / assets
+            )
 
-                ratio = (
-                    shareholders_funds
-                    / assets
-                )
+            return {
 
-                steps = [
+                "success": True,
+
+                "title":
+                    "Proprietary Ratio",
+
+                "value":
+                    ratio,
+
+                "steps": [
 
                     "Shareholders' Funds = "
                     "Total Assets − Total Debt",
@@ -1344,24 +1416,11 @@ def local_solve(question):
 
                 ]
 
-                return {
-
-                    "success": True,
-
-                    "title":
-                        "Proprietary Ratio",
-
-                    "value":
-                        ratio,
-
-                    "steps":
-                        steps
-
-                }
+            }
 
 
     # =====================================================
-    # 10. GROSS PROFIT RATIO
+    # GROSS PROFIT RATIO
     # =====================================================
 
     if "gross profit ratio" in q:
@@ -1401,7 +1460,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 11. NET PROFIT RATIO
+    # NET PROFIT RATIO
     # =====================================================
 
     if "net profit ratio" in q:
@@ -1441,7 +1500,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 12. ROI
+    # ROI
     # =====================================================
 
     if (
@@ -1449,763 +1508,4 @@ def local_solve(question):
         or "return on investment" in q
     ):
 
-        profit = extract_labeled_number(
-            question,
-            [
-                "operating profit"
-            ]
-        )
-
-        capital = extract_capital_employed(
-            question
-        )
-
-        if (
-            profit is not None
-            and capital is not None
-        ):
-
-            return calculate({
-
-                "type":
-                    "roi",
-
-                "operating_profit":
-                    profit,
-
-                "capital_employed":
-                    capital
-
-            })
-
-
-    # =====================================================
-    # 13. INTEREST ON CAPITAL
-    # =====================================================
-
-    if "interest on capital" in q:
-
-        capital = extract_labeled_number(
-            question,
-            [
-                "capital"
-            ]
-        )
-
-        rate = extract_percentage(
-            question
-        )
-
-        if (
-            capital is not None
-            and rate is not None
-        ):
-
-            return calculate({
-
-                "type":
-                    "interest_on_capital",
-
-                "capital":
-                    capital,
-
-                "rate":
-                    rate
-
-            })
-
-
-    # =====================================================
-    # 14. INTEREST ON DRAWINGS
-    # =====================================================
-
-    if "interest on drawings" in q:
-
-        drawings = extract_labeled_number(
-            question,
-            [
-                "drawings",
-                "drawing"
-            ]
-        )
-
-        rate = extract_percentage(
-            question
-        )
-
-        if (
-            drawings is not None
-            and rate is not None
-        ):
-
-            return calculate({
-
-                "type":
-                    "interest_on_drawings",
-
-                "drawings":
-                    drawings,
-
-                "rate":
-                    rate
-
-            })
-
-
-    # =====================================================
-    # 15. CONTRIBUTION
-    # =====================================================
-
-    if "contribution" in q:
-
-        sales = extract_labeled_number(
-            question,
-            [
-                "sales"
-            ]
-        )
-
-        variable_cost = extract_labeled_number(
-            question,
-            [
-                "variable cost",
-                "variable costs"
-            ]
-        )
-
-        if (
-            sales is not None
-            and variable_cost is not None
-        ):
-
-            return calculate({
-
-                "type":
-                    "contribution",
-
-                "sales":
-                    sales,
-
-                "variable_cost":
-                    variable_cost
-
-            })
-
-
-    # =====================================================
-    # 16. P/V RATIO
-    # =====================================================
-
-    if (
-        "p/v ratio" in q
-        or "profit volume ratio" in q
-    ):
-
-        contribution = extract_labeled_number(
-            question,
-            [
-                "contribution"
-            ]
-        )
-
-        sales = extract_labeled_number(
-            question,
-            [
-                "sales"
-            ]
-        )
-
-        if (
-            contribution is not None
-            and sales is not None
-        ):
-
-            return calculate({
-
-                "type":
-                    "profit_volume_ratio",
-
-                "contribution":
-                    contribution,
-
-                "sales":
-                    sales
-
-            })
-
-
-    # =====================================================
-    # 17. BREAK EVEN
-    # =====================================================
-
-    if (
-        "break even" in q
-        or "break-even" in q
-    ):
-
-        fixed_cost = extract_labeled_number(
-            question,
-            [
-                "fixed cost",
-                "fixed costs"
-            ]
-        )
-
-        match = re.search(
-            r"(?:p/v|p-v|profit volume)"
-            r".{0,20}?"
-            r"(\d+(?:\.\d+)?)\s*%",
-            question,
-            re.IGNORECASE
-        )
-
-        if (
-            fixed_cost is not None
-            and match
-        ):
-
-            pv_ratio = clean_number(
-                match.group(1)
-            )
-
-            return calculate({
-
-                "type":
-                    "break_even_point",
-
-                "fixed_cost":
-                    fixed_cost,
-
-                "pv_ratio":
-                    pv_ratio
-
-            })
-
-
-    # =====================================================
-    # 18. DEPRECIATION - SLM
-    # =====================================================
-
-    if (
-        "straight line" in q
-        or "straight-line" in q
-    ):
-
-        cost = extract_labeled_number(
-            question,
-            [
-                "cost",
-                "original cost"
-            ]
-        )
-
-        residual = extract_labeled_number(
-            question,
-            [
-                "residual value",
-                "scrap value"
-            ]
-        )
-
-        life = extract_labeled_number(
-            question,
-            [
-                "useful life",
-                "life"
-            ]
-        )
-
-        if (
-            cost is not None
-            and life is not None
-        ):
-
-            return calculate({
-
-                "type":
-                    "depreciation_straight_line",
-
-                "cost":
-                    cost,
-
-                "residual_value":
-                    residual or 0,
-
-                "useful_life":
-                    life
-
-            })
-
-
-    # =====================================================
-    # NOTHING LOCAL
-    # =====================================================
-
-    return None
-
-
-# =========================================================
-# FORMAT RESULT
-# =========================================================
-
-def format_result(result):
-
-    if not result:
-        return ""
-
-    if not result.get("success"):
-
-        return (
-            "❌ "
-            + result.get(
-                "error",
-                "Calculation error."
-            )
-        )
-
-    lines = []
-
-    lines.append(
-        "📚 "
-        + result.get(
-            "title",
-            "Solution"
-        )
-    )
-
-    lines.append("")
-
-    for step in result.get(
-        "steps",
-        []
-    ):
-
-        lines.append(step)
-
-    value = result.get(
-        "value"
-    )
-
-    title = result.get(
-        "title",
-        ""
-    ).lower()
-
-    # Ratio values
-    if (
-        value is not None
-        and isinstance(
-            value,
-            (int, float)
-        )
-    ):
-
-        if (
-            "ratio" in title
-            and "debt ratio" not in title
-            and "gross profit ratio" not in title
-            and "net profit ratio" not in title
-        ):
-
-            lines.append("")
-
-            lines.append(
-                "✅ Final Answer: "
-                + format_decimal(value)
-                + " : 1"
-            )
-
-        elif (
-            "ratio" in title
-            or "%" in "\n".join(
-                result.get(
-                    "steps",
-                    []
-                )
-            )
-        ):
-
-            # Avoid duplicate % if already shown
-            last_steps = "\n".join(
-                result.get(
-                    "steps",
-                    []
-                )
-            )
-
-            if (
-                "Final Answer" not in last_steps
-            ):
-
-                lines.append("")
-
-                lines.append(
-                    "✅ Final Answer: "
-                    + format_decimal(value)
-                    + "%"
-                )
-
-        elif (
-            "basic calculation"
-            in title
-        ):
-
-            lines.append("")
-
-            lines.append(
-                "✅ Final Answer: "
-                + format_decimal(value)
-            )
-
-        else:
-
-            lines.append("")
-
-            lines.append(
-                "✅ Final Answer: ₹"
-                + format_number(value)
-            )
-
-    return "\n".join(lines)
-
-
-# =========================================================
-# AI FALLBACK
-# =========================================================
-
-def solve_with_ai(
-    question,
-    image,
-    pattern
-):
-
-    api_key = os.environ.get(
-        "OPENAI_API_KEY"
-    )
-
-    if not api_key:
-
-        raise Exception(
-            "OPENAI_API_KEY is not configured."
-        )
-
-    client = OpenAI(
-        api_key=api_key
-    )
-
-    database_context = ""
-
-    if pattern:
-
-        database_context = """
-
-DATABASE PATTERN:
-
-Chapter:
-""" + str(
-            pattern.get(
-                "chapter",
-                ""
-            )
-        ) + """
-
-Formula:
-""" + str(
-            pattern.get(
-                "formula",
-                ""
-            )
-        ) + """
-
-Method:
-""" + "\n".join(
-            pattern.get(
-                "method",
-                []
-            )
-        )
-
-
-    prompt = """
-You are Commerce AI.
-
-Solve the student's Accountancy or Economics
-question accurately.
-
-Follow this format:
-
-1. Given
-2. Required
-3. Formula / Rule
-4. Calculation
-5. Final Answer
-
-For Accountancy:
-- show proper journal entries when asked
-- show ratios clearly
-- show working notes
-- use ₹ correctly
-- do not skip important calculations
-
-For Economics:
-- explain the formula
-- calculate step by step
-- clearly state the final result
-
-Never invent information that is not given.
-
-""" + database_context + """
-
-QUESTION:
-
-""" + question
-
-
-    content = [
-
-        {
-            "type":
-                "input_text",
-
-            "text":
-                prompt
-        }
-
-    ]
-
-    if image:
-
-        content.append({
-
-            "type":
-                "input_image",
-
-            "image_url":
-                image
-
-        })
-
-
-    response = client.responses.create(
-
-        model="gpt-5.6-luna",
-
-        input=[
-
-            {
-                "role":
-                    "user",
-
-                "content":
-                    content
-            }
-
-        ]
-    )
-
-    return response.output_text
-
-
-# =========================================================
-# HTTP HANDLER
-# =========================================================
-
-class handler(
-    BaseHTTPRequestHandler
-):
-
-    def do_POST(self):
-
-        try:
-
-            content_length = int(
-                self.headers.get(
-                    "Content-Length",
-                    0
-                )
-            )
-
-            body = self.rfile.read(
-                content_length
-            )
-
-            data = json.loads(
-                body
-            )
-
-            question = data.get(
-                "question",
-                ""
-            ).strip()
-
-            image = data.get(
-                "image",
-                ""
-            )
-
-
-            # =============================================
-            # EMPTY QUESTION
-            # =============================================
-
-            if (
-                not question
-                and not image
-            ):
-
-                self.send_response(400)
-
-                self.send_header(
-                    "Content-Type",
-                    "application/json; charset=utf-8"
-                )
-
-                self.end_headers()
-
-                self.wfile.write(
-
-                    json.dumps(
-                        {
-                            "success": False,
-                            "error":
-                                "Question ya photo required hai."
-                        },
-                        ensure_ascii=False
-                    ).encode("utf-8")
-
-                )
-
-                return
-
-
-            # =============================================
-            # LOCAL SOLVER
-            # =============================================
-
-            local_result = None
-
-            if question:
-
-                local_result = local_solve(
-                    question
-                )
-
-
-            # =============================================
-            # LOCAL SUCCESS
-            # =============================================
-
-            if (
-                local_result
-                and local_result.get(
-                    "success"
-                )
-            ):
-
-                answer = format_result(
-                    local_result
-                )
-
-                self.send_response(200)
-
-                self.send_header(
-                    "Content-Type",
-                    "application/json; charset=utf-8"
-                )
-
-                self.end_headers()
-
-                self.wfile.write(
-
-                    json.dumps(
-                        {
-                            "success": True,
-                            "answer": answer,
-                            "source":
-                                "local_engine",
-                            "api_used":
-                                False
-                        },
-                        ensure_ascii=False
-                    ).encode("utf-8")
-
-                )
-
-                return
-
-
-            # =============================================
-            # DATABASE
-            # =============================================
-
-            pattern = find_pattern(
-                question
-            )
-
-
-            # =============================================
-            # AI FALLBACK
-            # =============================================
-
-            answer = solve_with_ai(
-                question,
-                image,
-                pattern
-            )
-
-
-            self.send_response(200)
-
-            self.send_header(
-                "Content-Type",
-                "application/json; charset=utf-8"
-            )
-
-            self.end_headers()
-
-            self.wfile.write(
-
-                json.dumps(
-                    {
-                        "success": True,
-                        "answer": answer,
-                        "source":
-                            "ai",
-                        "api_used":
-                            True,
-                        "pattern":
-                            (
-                                pattern.get("id")
-                                if pattern
-                                else None
-                            )
-                    },
-                    ensure_ascii=False
-                ).encode("utf-8")
-
-            )
-
-
-        except Exception as e:
-
-            self.send_response(500)
-
-            self.send_header(
-                "Content-Type",
-                "application/json; charset=utf-8"
-            )
-
-            self.end_headers()
-
-            self.wfile.write(
-
-                json.dumps(
-                    {
-                        "success": False,
-                        "error":
-                            str(e)
-                    },
-                    ensure_ascii=False
-                ).encode("utf-8")
-
-    )
+        profit = extract_labeled_number
