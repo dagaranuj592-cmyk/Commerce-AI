@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import base64
 from http.server import BaseHTTPRequestHandler
 
 from openai import OpenAI
@@ -8,23 +9,30 @@ from openai import OpenAI
 from api.calculator import calculate
 
 
-# -----------------------------------
-# DATABASE
-# -----------------------------------
+# ==========================================
+# DATABASE PATH
+# ==========================================
 
-DATABASE_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)),
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+PATTERN_DATABASE_PATH = os.path.join(
+    BASE_DIR,
     "database",
-    "accountancy.json"
+    "accountancy",
+    "patterns.json"
 )
 
+
+# ==========================================
+# LOAD PATTERN DATABASE
+# ==========================================
 
 def load_database():
 
     try:
 
         with open(
-            DATABASE_PATH,
+            PATTERN_DATABASE_PATH,
             "r",
             encoding="utf-8"
         ) as file:
@@ -33,121 +41,66 @@ def load_database():
 
     except Exception:
 
-        return {}
+        return {
+            "patterns": []
+        }
 
 
-# -----------------------------------
-# FORMULA SEARCH
-# -----------------------------------
+# ==========================================
+# NUMBER EXTRACTION
+# ==========================================
 
-def find_formulas(question, database):
+def extract_money_numbers(text):
 
-    question_lower = question.lower()
+    """
+    Finds numbers such as:
 
-    matches = []
+    ₹3,20,000
+    3,20,000
+    ₹200000
+    200000
+    """
 
-    chapters = database.get(
-        "chapters",
-        {}
+    matches = re.findall(
+        r"(?:₹\s*)?(\d{1,3}(?:,\d{2,3})*(?:\.\d+)?|\d+(?:\.\d+)?)",
+        text
     )
 
-    for chapter_key, chapter in chapters.items():
+    numbers = []
 
-        chapter_name = chapter.get(
-            "name",
-            ""
-        ).lower()
+    for item in matches:
 
-        formulas = chapter.get(
-            "formulas",
-            {}
-        )
+        try:
 
-        for formula_key, formula_data in formulas.items():
-
-            formula_text = formula_data.get(
-                "formula",
-                ""
+            value = float(
+                item.replace(",", "")
             )
 
-            use_when = formula_data.get(
-                "use_when",
-                ""
-            )
+            numbers.append(value)
 
-            search_text = (
-                chapter_name
-                + " "
-                + formula_key.replace("_", " ")
-                + " "
-                + formula_text
-                + " "
-                + use_when
-            ).lower()
+        except Exception:
 
-            score = 0
+            pass
 
-            for word in question_lower.split():
-
-                word = word.strip(
-                    ".,!?():;"
-                )
-
-                if (
-                    len(word) >= 4
-                    and word in search_text
-                ):
-
-                    score += 1
-
-            if score > 0:
-
-                matches.append({
-                    "chapter": chapter_name,
-                    "formula": formula_text,
-                    "use_when": use_when,
-                    "score": score
-                })
-
-    matches.sort(
-        key=lambda x: x["score"],
-        reverse=True
-    )
-
-    return matches[:5]
+    return numbers
 
 
-# -----------------------------------
-# NUMBER HELPERS
-# -----------------------------------
+# ==========================================
+# EXTRACT PERCENTAGE
+# ==========================================
 
-def clean_number(value):
+def extract_percentage(text):
 
-    value = value.replace(
-        ",",
-        ""
-    )
-
-    value = value.replace(
-        "₹",
-        ""
-    )
-
-    value = value.strip()
-
-    return float(value)
-
-
-def find_number_after_patterns(
-    question,
-    patterns
-):
+    patterns = [
+        r"(\d+(?:\.\d+)?)\s*%",
+        r"rate\s*(?:of\s*)?(?:return\s*)?(?:is|=)?\s*(\d+(?:\.\d+)?)"
+    ]
 
     for pattern in patterns:
 
         match = re.search(
             pattern,
-            question,
+            text,
             re.IGNORECASE
         )
 
@@ -155,7 +108,7 @@ def find_number_after_patterns(
 
             try:
 
-                return clean_number(
+                return float(
                     match.group(1)
                 )
 
@@ -166,44 +119,483 @@ def find_number_after_patterns(
     return None
 
 
-# -----------------------------------
-# AUTOMATIC QUESTION DETECTION
-# -----------------------------------
+# ==========================================
+# EXTRACT YEARS PURCHASE
+# ==========================================
 
-def detect_and_calculate(question):
+def extract_years_purchase(text):
+
+    patterns = [
+        r"(\d+(?:\.\d+)?)\s*years?\s*purchase",
+        r"(\d+(?:\.\d+)?)\s*year\s*purchase",
+        r"years?\s*purchase\s*(?:of|=)?\s*(\d+(?:\.\d+)?)"
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+
+            try:
+
+                return float(
+                    match.group(1)
+                )
+
+            except Exception:
+
+                pass
+
+    return None
+
+
+# ==========================================
+# EXTRACT CAPITAL EMPLOYED
+# ==========================================
+
+def extract_capital_employed(text):
+
+    patterns = [
+        r"capital employed\s*(?:is|=|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)",
+        r"capital employed.{0,20}?₹?\s*([\d,]+(?:\.\d+)?)"
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+
+            try:
+
+                return float(
+                    match.group(1).replace(
+                        ",",
+                        ""
+                    )
+                )
+
+            except Exception:
+
+                pass
+
+    return None
+
+
+# ==========================================
+# EXTRACT AVERAGE PROFIT
+# ==========================================
+
+def extract_average_profit(text):
+
+    patterns = [
+        r"average profit\s*(?:is|=|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)",
+        r"average profits?\s*(?:is|=|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)"
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+
+            try:
+
+                return float(
+                    match.group(1).replace(
+                        ",",
+                        ""
+                    )
+                )
+
+            except Exception:
+
+                pass
+
+    return None
+
+
+# ==========================================
+# HISTORICAL PROFIT DETECTION
+# ==========================================
+
+def extract_historical_profits(text):
+
+    """
+    Detects questions such as:
+
+    profits for the last four years were
+    ₹3,20,000, ₹2,80,000, ₹3,60,000 and ₹4,00,000
+    """
+
+    keywords = [
+        "profits for the last",
+        "profits of the last",
+        "profits for previous",
+        "profits of previous",
+        "profits for the past",
+        "profits of the past",
+        "profits were",
+        "profits are"
+    ]
+
+    lower_text = text.lower()
+
+    if not any(
+        keyword in lower_text
+        for keyword in keywords
+    ):
+
+        return []
+
+    numbers = extract_money_numbers(text)
+
+    # Remove obvious non-profit numbers
+    # such as years-purchase and percentages.
+    rate = extract_percentage(text)
+    years_purchase = extract_years_purchase(text)
+
+    filtered = []
+
+    for number in numbers:
+
+        if rate is not None and number == rate:
+            continue
+
+        if years_purchase is not None and number == years_purchase:
+            continue
+
+        # Ignore very small standalone numbers
+        # that are unlikely to be profit amounts.
+        if number < 1000:
+            continue
+
+        filtered.append(number)
+
+    return filtered
+
+
+# ==========================================
+# FIND DATABASE PATTERN
+# ==========================================
+
+def find_pattern(question):
+
+    database = load_database()
+
+    patterns = database.get(
+        "patterns",
+        []
+    )
+
+    question_lower = question.lower()
+
+    best_pattern = None
+    best_score = 0
+
+    for pattern in patterns:
+
+        keywords = pattern.get(
+            "keywords",
+            []
+        )
+
+        score = 0
+
+        for keyword in keywords:
+
+            if keyword.lower() in question_lower:
+
+                score += 1
+
+        if score > best_score:
+
+            best_score = score
+            best_pattern = pattern
+
+    return best_pattern
+
+
+# ==========================================
+# LOCAL ACCOUNTANCY ENGINE
+# ==========================================
+
+def local_solve(question):
 
     q = question.lower()
 
 
-    # =================================
-    # CURRENT RATIO
-    # =================================
+    # ======================================
+    # HISTORICAL PROFITS + GOODWILL
+    # ======================================
 
     if (
-        "current ratio" in q
+        "goodwill" in q
+        and "profit" in q
         and (
-            "current assets" in q
-            or "current asset" in q
-        )
-        and (
-            "current liabilities" in q
-            or "current liability" in q
+            "last" in q
+            or "previous" in q
+            or "past" in q
         )
     ):
 
-        assets = find_number_after_patterns(
+        profits = extract_historical_profits(
+            question
+        )
+
+        years_purchase = extract_years_purchase(
+            question
+        )
+
+        capital = extract_capital_employed(
+            question
+        )
+
+        rate = extract_percentage(
+            question
+        )
+
+        # ----------------------------------
+        # Super Profit Method
+        # ----------------------------------
+
+        if (
+            len(profits) >= 2
+            and years_purchase is not None
+            and capital is not None
+            and rate is not None
+        ):
+
+            total = sum(profits)
+
+            average_profit = (
+                total / len(profits)
+            )
+
+            result = calculate({
+                "type": "goodwill_super_profit",
+                "average_profit": average_profit,
+                "capital_employed": capital,
+                "normal_rate": rate,
+                "years_purchase": years_purchase
+            })
+
+            if result:
+
+                result["historical_profits"] = profits
+
+                # Add detailed first steps
+                result["steps"] = [
+                    "Profits of previous years:",
+                    " + ".join(
+                        "₹" + format_number(x)
+                        for x in profits
+                    ),
+                    "",
+                    "Total Profit = "
+                    + " + ".join(
+                        "₹" + format_number(x)
+                        for x in profits
+                    ),
+                    "Total Profit = ₹"
+                    + format_number(total),
+                    "",
+                    "Average Profit = Total Profit ÷ Number of Years",
+                    "Average Profit = ₹"
+                    + format_number(total)
+                    + " ÷ "
+                    + str(len(profits)),
+                    "Average Profit = ₹"
+                    + format_number(average_profit),
+                    "",
+                    "Normal Profit = Capital Employed × Normal Rate / 100",
+                    "Normal Profit = ₹"
+                    + format_number(capital)
+                    + " × "
+                    + format_number(rate)
+                    + " / 100",
+                    "Normal Profit = ₹"
+                    + format_number(
+                        capital * rate / 100
+                    ),
+                    "",
+                    "Super Profit = Average Profit − Normal Profit",
+                    "Super Profit = ₹"
+                    + format_number(average_profit)
+                    + " − ₹"
+                    + format_number(
+                        capital * rate / 100
+                    ),
+                    "Super Profit = ₹"
+                    + format_number(
+                        average_profit
+                        - (capital * rate / 100)
+                    ),
+                    "",
+                    "Goodwill = Super Profit × Years' Purchase",
+                    "Goodwill = ₹"
+                    + format_number(
+                        average_profit
+                        - (capital * rate / 100)
+                    )
+                    + " × "
+                    + format_number(
+                        years_purchase
+                    ),
+                    "Goodwill = ₹"
+                    + format_number(
+                        (
+                            average_profit
+                            - (
+                                capital
+                                * rate
+                                / 100
+                            )
+                        )
+                        * years_purchase
+                    )
+                ]
+
+                return result
+
+
+        # ----------------------------------
+        # Average Profit Method
+        # ----------------------------------
+
+        if (
+            len(profits) >= 2
+            and years_purchase is not None
+        ):
+
+            result = calculate({
+                "type": "average_profit",
+                "profits": profits
+            })
+
+            if result:
+
+                average_profit = result["value"]
+
+                goodwill_result = calculate({
+                    "type": "goodwill_average_profit",
+                    "average_profit": average_profit,
+                    "years_purchase": years_purchase
+                })
+
+                if goodwill_result:
+
+                    goodwill_result["steps"] = [
+                        "Profits of previous years:",
+                        " + ".join(
+                            "₹" + format_number(x)
+                            for x in profits
+                        ),
+                        "",
+                        "Total Profit = ₹"
+                        + format_number(
+                            sum(profits)
+                        ),
+                        "Average Profit = Total Profit ÷ Number of Years",
+                        "Average Profit = ₹"
+                        + format_number(
+                            average_profit
+                        )
+                        + " ÷ "
+                        + str(len(profits)),
+                        "Average Profit = ₹"
+                        + format_number(
+                            average_profit
+                        ),
+                        "",
+                        "Goodwill = Average Profit × Years' Purchase",
+                        "Goodwill = ₹"
+                        + format_number(
+                            average_profit
+                        )
+                        + " × "
+                        + format_number(
+                            years_purchase
+                        ),
+                        "Goodwill = ₹"
+                        + format_number(
+                            average_profit
+                            * years_purchase
+                        )
+                    ]
+
+                    return goodwill_result
+
+
+    # ======================================
+    # AVERAGE PROFIT
+    # ======================================
+
+    average_profit = extract_average_profit(
+        question
+    )
+
+    if average_profit is not None:
+
+        # Super Profit
+        if (
+            "super profit" in q
+            and capital_is_present(question)
+            and extract_percentage(question) is not None
+        ):
+
+            capital = extract_capital_employed(
+                question
+            )
+
+            rate = extract_percentage(
+                question
+            )
+
+            return calculate({
+                "type": "super_profit",
+                "average_profit": average_profit,
+                "capital_employed": capital,
+                "normal_rate": rate
+            })
+
+
+    # ======================================
+    # CURRENT RATIO
+    # ======================================
+
+    if (
+        "current ratio" in q
+        and "current asset" in q
+        and "current liabil" in q
+    ):
+
+        assets = find_labeled_number(
             question,
             [
-                r"current assets?\s*(?:=|are|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)",
-                r"current assets?.{0,20}?₹?\s*([\d,]+(?:\.\d+)?)"
+                "current assets",
+                "current asset"
             ]
         )
 
-        liabilities = find_number_after_patterns(
+        liabilities = find_labeled_number(
             question,
             [
-                r"current liabilities?\s*(?:=|are|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)",
-                r"current liabilities?.{0,20}?₹?\s*([\d,]+(?:\.\d+)?)"
+                "current liabilities",
+                "current liability"
             ]
         )
 
@@ -219,27 +611,31 @@ def detect_and_calculate(question):
             })
 
 
-    # =================================
+    # ======================================
     # QUICK RATIO
-    # =================================
+    # ======================================
 
     if (
-        "quick ratio" in q
-        or "liquid ratio" in q
+        (
+            "quick ratio" in q
+            or "liquid ratio" in q
+        )
+        and "current liabil" in q
     ):
 
-        quick_assets = find_number_after_patterns(
+        quick_assets = find_labeled_number(
             question,
             [
-                r"quick assets?\s*(?:=|are|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)",
-                r"quick assets?.{0,20}?₹?\s*([\d,]+(?:\.\d+)?)"
+                "quick assets",
+                "quick asset"
             ]
         )
 
-        liabilities = find_number_after_patterns(
+        liabilities = find_labeled_number(
             question,
             [
-                r"current liabilities?\s*(?:=|are|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)"
+                "current liabilities",
+                "current liability"
             ]
         )
 
@@ -255,134 +651,24 @@ def detect_and_calculate(question):
             })
 
 
-    # =================================
-    # SUPER PROFIT / GOODWILL
-    # =================================
-
-    if (
-        "super profit" in q
-        or (
-            "goodwill" in q
-            and "normal rate" in q
-        )
-    ):
-
-        average_profit = find_number_after_patterns(
-            question,
-            [
-                r"average profit\s*(?:=|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)",
-                r"average profits?\s*(?:=|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)"
-            ]
-        )
-
-        capital = find_number_after_patterns(
-            question,
-            [
-                r"capital employed\s*(?:=|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)",
-                r"capital employed.{0,20}?₹?\s*([\d,]+(?:\.\d+)?)"
-            ]
-        )
-
-        rate = find_number_after_patterns(
-            question,
-            [
-                r"normal rate(?: of return)?\s*(?:=|is|of)?\s*([\d.]+)\s*%?",
-                r"normal rate.{0,15}?([\d.]+)\s*%"
-            ]
-        )
-
-        years = find_number_after_patterns(
-            question,
-            [
-                r"(\d+(?:\.\d+)?)\s*(?:years?|year)\s*(?:purchase|purchases)",
-                r"years?'?\s*purchase\s*(?:=|is|of)?\s*(\d+(?:\.\d+)?)"
-            ]
-        )
-
-        if (
-            average_profit is not None
-            and capital is not None
-            and rate is not None
-        ):
-
-            if (
-                "goodwill" in q
-                and years is not None
-            ):
-
-                return calculate({
-                    "type": "goodwill_super_profit",
-                    "average_profit": average_profit,
-                    "capital_employed": capital,
-                    "normal_rate": rate,
-                    "years_purchase": years
-                })
-
-            return calculate({
-                "type": "super_profit",
-                "average_profit": average_profit,
-                "capital_employed": capital,
-                "normal_rate": rate
-            })
-
-
-    # =================================
-    # AVERAGE PROFIT GOODWILL
-    # =================================
-
-    if (
-        "goodwill" in q
-        and (
-            "average profit" in q
-            or "average profit method" in q
-        )
-    ):
-
-        average_profit = find_number_after_patterns(
-            question,
-            [
-                r"average profit\s*(?:=|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)"
-            ]
-        )
-
-        years = find_number_after_patterns(
-            question,
-            [
-                r"(\d+(?:\.\d+)?)\s*(?:years?|year)\s*(?:purchase|purchases)",
-                r"years?'?\s*purchase\s*(?:=|is|of)?\s*(\d+(?:\.\d+)?)"
-            ]
-        )
-
-        if (
-            average_profit is not None
-            and years is not None
-        ):
-
-            return calculate({
-                "type": "goodwill_average_profit",
-                "average_profit": average_profit,
-                "years_purchase": years
-            })
-
-
-    # =================================
+    # ======================================
     # GROSS PROFIT RATIO
-    # =================================
+    # ======================================
 
     if "gross profit ratio" in q:
 
-        gross_profit = find_number_after_patterns(
+        gross_profit = find_labeled_number(
             question,
             [
-                r"gross profit\s*(?:=|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)"
+                "gross profit"
             ]
         )
 
-        revenue = find_number_after_patterns(
+        revenue = find_labeled_number(
             question,
             [
-                r"revenue(?: from operations)?\s*(?:=|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)",
-                r"sales\s*(?:=|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)"
+                "revenue",
+                "sales"
             ]
         )
 
@@ -398,24 +684,24 @@ def detect_and_calculate(question):
             })
 
 
-    # =================================
+    # ======================================
     # NET PROFIT RATIO
-    # =================================
+    # ======================================
 
     if "net profit ratio" in q:
 
-        net_profit = find_number_after_patterns(
+        net_profit = find_labeled_number(
             question,
             [
-                r"net profit\s*(?:=|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)"
+                "net profit"
             ]
         )
 
-        revenue = find_number_after_patterns(
+        revenue = find_labeled_number(
             question,
             [
-                r"revenue(?: from operations)?\s*(?:=|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)",
-                r"sales\s*(?:=|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)"
+                "revenue",
+                "sales"
             ]
         )
 
@@ -431,26 +717,26 @@ def detect_and_calculate(question):
             })
 
 
-    # =================================
+    # ======================================
     # ROI
-    # =================================
+    # ======================================
 
     if (
         "roi" in q
         or "return on investment" in q
     ):
 
-        operating_profit = find_number_after_patterns(
+        operating_profit = find_labeled_number(
             question,
             [
-                r"operating profit\s*(?:=|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)"
+                "operating profit"
             ]
         )
 
-        capital = find_number_after_patterns(
+        capital = find_labeled_number(
             question,
             [
-                r"capital employed\s*(?:=|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)"
+                "capital employed"
             ]
         )
 
@@ -466,98 +752,105 @@ def detect_and_calculate(question):
             })
 
 
-    # =================================
-    # INTEREST ON CAPITAL
-    # =================================
+    # ======================================
+    # SUPER PROFIT
+    # ======================================
 
-    if "interest on capital" in q:
+    if "super profit" in q:
 
-        capital = find_number_after_patterns(
-            question,
-            [
-                r"capital\s*(?:=|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)"
-            ]
+        capital = extract_capital_employed(
+            question
         )
 
-        rate = find_number_after_patterns(
-            question,
-            [
-                r"rate\s*(?:=|is|of)?\s*([\d.]+)\s*%"
-            ]
-        )
-
-        time = find_number_after_patterns(
-            question,
-            [
-                r"time\s*(?:=|is|of)?\s*([\d.]+)",
-                r"for\s*([\d.]+)\s*(?:year|years)"
-            ]
+        rate = extract_percentage(
+            question
         )
 
         if (
-            capital is not None
+            average_profit is not None
+            and capital is not None
             and rate is not None
         ):
 
             return calculate({
-                "type": "interest_on_capital",
-                "capital": capital,
-                "rate": rate,
-                "time": time if time else 1
-            })
-
-
-    # =================================
-    # INTEREST ON DRAWINGS
-    # =================================
-
-    if "interest on drawings" in q:
-
-        drawings = find_number_after_patterns(
-            question,
-            [
-                r"drawings\s*(?:=|are|is|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)"
-            ]
-        )
-
-        rate = find_number_after_patterns(
-            question,
-            [
-                r"rate\s*(?:=|is|of)?\s*([\d.]+)\s*%"
-            ]
-        )
-
-        time = find_number_after_patterns(
-            question,
-            [
-                r"time\s*(?:=|is|of)?\s*([\d.]+)",
-                r"for\s*([\d.]+)\s*(?:year|years)"
-            ]
-        )
-
-        if (
-            drawings is not None
-            and rate is not None
-        ):
-
-            return calculate({
-                "type": "interest_on_drawings",
-                "drawings": drawings,
-                "rate": rate,
-                "time": time if time else 1
+                "type": "super_profit",
+                "average_profit": average_profit,
+                "capital_employed": capital,
+                "normal_rate": rate
             })
 
 
     return None
 
 
-# -----------------------------------
-# FORMAT CALCULATOR ANSWER
-# -----------------------------------
+# ==========================================
+# HELPERS
+# ==========================================
 
-def format_calculator_answer(result):
+def capital_is_present(text):
+
+    return (
+        "capital employed" in text.lower()
+    )
+
+
+def find_labeled_number(
+    text,
+    labels
+):
+
+    for label in labels:
+
+        pattern = (
+            re.escape(label)
+            + r"\s*(?:is|=|are|of)?\s*"
+            + r"₹?\s*"
+            + r"([\d,]+(?:\.\d+)?)"
+        )
+
+        match = re.search(
+            pattern,
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+
+            try:
+
+                return float(
+                    match.group(1).replace(
+                        ",",
+                        ""
+                    )
+                )
+
+            except Exception:
+
+                pass
+
+    return None
+
+
+def format_number(number):
+
+    if isinstance(number, float):
+
+        if number.is_integer():
+
+            number = int(number)
+
+    return f"{number:,}"
+
+
+# ==========================================
+# FORMAT RESULT
+# ==========================================
+
+def format_result(result):
 
     if not result:
+
         return ""
 
     if not result.get("success"):
@@ -572,12 +865,13 @@ def format_calculator_answer(result):
 
     lines = []
 
+    title = result.get(
+        "title",
+        "Solution"
+    )
+
     lines.append(
-        "📚 "
-        + result.get(
-            "title",
-            "Solution"
-        )
+        "📚 " + title
     )
 
     lines.append("")
@@ -595,132 +889,111 @@ def format_calculator_answer(result):
         "value"
     )
 
-    # Ratio values should NOT have ₹
-    title = result.get(
-        "title",
-        ""
-    ).lower()
+    title_lower = title.lower()
 
-    if "ratio" in title:
+    if "ratio" in title_lower:
 
-        if isinstance(value, float):
+        lines.append(
+            "✅ Final Answer: "
+            + f"{value:.2f}".rstrip(
+                "0"
+            ).rstrip(".")
+            + " : 1"
+        )
 
-            if value.is_integer():
+    elif isinstance(value, (int, float)):
 
-                value_text = str(
-                    int(value)
-                )
-
-            else:
-
-                value_text = f"{value:.2f}".rstrip(
-                    "0"
-                ).rstrip(".")
-
-        else:
-
-            value_text = str(value)
-
-    else:
-
-        if isinstance(value, float):
-
-            if value.is_integer():
-
-                value_text = (
-                    "₹"
-                    + f"{int(value):,}"
-                )
-
-            else:
-
-                value_text = (
-                    "₹"
-                    + f"{value:,.2f}"
-                )
-
-        else:
-
-            value_text = str(value)
-
-    lines.append(
-        "✅ Final Answer: "
-        + value_text
-    )
+        lines.append(
+            "✅ Final Answer: ₹"
+            + format_number(value)
+        )
 
     return "\n".join(lines)
 
 
-# -----------------------------------
+# ==========================================
 # AI FALLBACK
-# -----------------------------------
+# ==========================================
 
 def solve_with_ai(
     question,
     image,
-    formula_matches
+    pattern
 ):
 
-    client = OpenAI(
-        api_key=os.environ.get(
-            "OPENAI_API_KEY"
+    api_key = os.environ.get(
+        "OPENAI_API_KEY"
+    )
+
+    if not api_key:
+
+        raise Exception(
+            "OPENAI_API_KEY is not configured."
         )
+
+    client = OpenAI(
+        api_key=api_key
     )
 
     database_context = ""
 
-    if formula_matches:
+    if pattern:
 
-        database_context = (
-            "\n\nOUR OWN FORMULA DATABASE:\n"
-        )
+        database_context = """
 
-        for item in formula_matches:
+Relevant pattern from our Commerce database:
 
-            database_context += (
-                "\nChapter: "
-                + item["chapter"]
-                + "\nFormula: "
-                + item["formula"]
-                + "\nUse when: "
-                + item["use_when"]
-                + "\n"
+Pattern:
+""" + pattern.get(
+            "id",
+            ""
+        ) + """
+
+Chapter:
+""" + pattern.get(
+            "chapter",
+            ""
+        ) + """
+
+Formula:
+""" + pattern.get(
+            "formula",
+            ""
+        ) + """
+
+Method:
+""" + "\n".join(
+            pattern.get(
+                "method",
+                []
             )
+        )
 
     prompt = """
 You are Commerce AI.
 
-Solve ONLY Commerce academic questions.
+Solve the student's Commerce question.
 
 Subjects:
-1. Accountancy
-2. Economics
+- Accountancy
+- Economics
 
-Give a complete student-friendly solution.
+Give an exam-ready, student-friendly solution.
 
-Use our own formula database whenever a relevant formula exists.
+For numerical questions:
+1. Identify the given information.
+2. Identify what is required.
+3. Write the formula.
+4. Substitute values.
+5. Show every important calculation.
+6. Give the final answer clearly.
 
-For Accountancy:
-- Identify what is given
-- Identify what is required
-- Write the relevant formula/rule
-- Show every calculation step
-- Show working notes where needed
-- Give the final answer clearly
-- Do not skip important steps
-
-For Economics:
-- Identify the concept
-- Explain it simply
-- Solve numerical questions step by step
-- Explain graphs when required
-- Give an exam-ready final answer
-
-Do not invent figures or assumptions.
+Do not invent missing values.
 
 """ + database_context + """
 
 QUESTION:
+
 """ + question
 
     content = [
@@ -750,9 +1023,9 @@ QUESTION:
     return response.output_text
 
 
-# -----------------------------------
+# ==========================================
 # HTTP HANDLER
-# -----------------------------------
+# ==========================================
 
 class handler(
     BaseHTTPRequestHandler
@@ -773,7 +1046,9 @@ class handler(
                 length
             )
 
-            data = json.loads(body)
+            data = json.loads(
+                body
+            )
 
             question = data.get(
                 "question",
@@ -812,36 +1087,27 @@ class handler(
                 return
 
 
-            # --------------------------------
-            # STEP 1:
-            # TRY OUR OWN CALCULATOR
-            # --------------------------------
+            # ==================================
+            # LOCAL ENGINE FIRST
+            # ==================================
 
-            calculator_result = None
+            local_result = None
 
             if question and not image:
 
-                calculator_result = (
-                    detect_and_calculate(
-                        question
-                    )
+                local_result = local_solve(
+                    question
                 )
 
-
-            # --------------------------------
-            # CALCULATOR SUCCESS
-            # NO API CALL
-            # --------------------------------
-
             if (
-                calculator_result
-                and calculator_result.get(
+                local_result
+                and local_result.get(
                     "success"
                 )
             ):
 
-                answer = format_calculator_answer(
-                    calculator_result
+                answer = format_result(
+                    local_result
                 )
 
                 self.send_response(200)
@@ -858,7 +1124,7 @@ class handler(
                         {
                             "success": True,
                             "answer": answer,
-                            "source": "calculator",
+                            "source": "local_database",
                             "api_used": False
                         },
                         ensure_ascii=False
@@ -868,28 +1134,23 @@ class handler(
                 return
 
 
-            # --------------------------------
-            # STEP 2:
-            # SEARCH DATABASE
-            # --------------------------------
+            # ==================================
+            # DATABASE PATTERN
+            # ==================================
 
-            database = load_database()
-
-            formula_matches = find_formulas(
-                question,
-                database
+            pattern = find_pattern(
+                question
             )
 
 
-            # --------------------------------
-            # STEP 3:
+            # ==================================
             # AI FALLBACK
-            # --------------------------------
+            # ==================================
 
             answer = solve_with_ai(
                 question,
                 image,
-                formula_matches
+                pattern
             )
 
 
@@ -909,8 +1170,12 @@ class handler(
                         "answer": answer,
                         "source": "ai",
                         "api_used": True,
-                        "database_matches": len(
-                            formula_matches
+                        "pattern": (
+                            pattern.get(
+                                "id"
+                            )
+                            if pattern
+                            else None
                         )
                     },
                     ensure_ascii=False
@@ -937,4 +1202,4 @@ class handler(
                     },
                     ensure_ascii=False
                 ).encode("utf-8")
-    )
+        )
