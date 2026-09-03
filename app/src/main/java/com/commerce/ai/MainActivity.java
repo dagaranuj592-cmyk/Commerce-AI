@@ -37,19 +37,31 @@ public class MainActivity extends Activity {
     private EditText questionInput;
     private TextView result;
 
-    // Answer scrolling ke liye class-level variable
-    private ScrollView resultScroll;
-
     private Uri selectedImageUri = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // ==========================================
+        // OUTER SCROLLVIEW
+        // ==========================================
+
+        ScrollView outerScrollView = new ScrollView(this);
+        outerScrollView.setFillViewport(true);
+
+        // ==========================================
+        // MAIN LAYOUT
+        // ==========================================
+
         LinearLayout mainLayout = new LinearLayout(this);
         mainLayout.setOrientation(LinearLayout.VERTICAL);
         mainLayout.setPadding(30, 35, 30, 30);
         mainLayout.setBackgroundColor(Color.WHITE);
+
+        // ==========================================
+        // TITLE
+        // ==========================================
 
         TextView title = new TextView(this);
         title.setText("Commerce AI");
@@ -66,6 +78,10 @@ public class MainActivity extends Activity {
                 )
         );
 
+        // ==========================================
+        // SUBTITLE
+        // ==========================================
+
         TextView subtitle = new TextView(this);
         subtitle.setText("Accountancy & Economics Solver");
         subtitle.setTextSize(16);
@@ -74,6 +90,10 @@ public class MainActivity extends Activity {
         subtitle.setPadding(0, 8, 0, 25);
 
         mainLayout.addView(subtitle);
+
+        // ==========================================
+        // PHOTO BUTTON
+        // ==========================================
 
         Button photoButton = new Button(this);
         photoButton.setText("📷  Upload Question Photo");
@@ -87,6 +107,10 @@ public class MainActivity extends Activity {
                 )
         );
 
+        // ==========================================
+        // QUESTION IMAGE
+        // ==========================================
+
         questionImage = new ImageView(this);
         questionImage.setVisibility(ImageView.GONE);
         questionImage.setAdjustViewBounds(true);
@@ -99,6 +123,10 @@ public class MainActivity extends Activity {
                         500
                 )
         );
+
+        // ==========================================
+        // QUESTION INPUT
+        // ==========================================
 
         questionInput = new EditText(this);
         questionInput.setHint("Or type your question here...");
@@ -120,6 +148,10 @@ public class MainActivity extends Activity {
                 inputParams
         );
 
+        // ==========================================
+        // SOLVE BUTTON
+        // ==========================================
+
         Button solveButton = new Button(this);
         solveButton.setText("✨  Solve Question");
         solveButton.setTextSize(17);
@@ -132,9 +164,9 @@ public class MainActivity extends Activity {
                 )
         );
 
-        // ==============================
-        // ANSWER TEXT
-        // ==============================
+        // ==========================================
+        // ANSWER
+        // ==========================================
 
         result = new TextView(this);
 
@@ -144,49 +176,46 @@ public class MainActivity extends Activity {
 
         result.setTextSize(16);
         result.setTextColor(Color.DKGRAY);
-        result.setPadding(10, 30, 10, 20);
+        result.setPadding(10, 30, 10, 30);
         result.setGravity(Gravity.TOP);
         result.setTextIsSelectable(true);
 
-        // ==============================
-        // SCROLLABLE ANSWER AREA
-        // ==============================
-
-        resultScroll = new ScrollView(this);
-        resultScroll.setFillViewport(true);
-
-        resultScroll.addView(
+        mainLayout.addView(
                 result,
-                new ScrollView.LayoutParams(
+                new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
                 )
         );
 
-        LinearLayout.LayoutParams resultScrollParams =
-                new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        0,
-                        1
-                );
+        // ==========================================
+        // PUT MAIN LAYOUT INSIDE OUTER SCROLLVIEW
+        // ==========================================
 
-        resultScrollParams.setMargins(0, 15, 0, 0);
+        outerScrollView.addView(mainLayout);
 
-        mainLayout.addView(
-                resultScroll,
-                resultScrollParams
-        );
+        setContentView(outerScrollView);
 
-        setContentView(mainLayout);
+        // ==========================================
+        // PHOTO BUTTON ACTION
+        // ==========================================
 
         photoButton.setOnClickListener(
                 view -> openPhotoPicker()
         );
 
+        // ==========================================
+        // SOLVE BUTTON ACTION
+        // ==========================================
+
         solveButton.setOnClickListener(
                 view -> solveQuestion()
         );
     }
+
+    // ==============================================
+    // SOLVE QUESTION
+    // ==============================================
 
     private void solveQuestion() {
 
@@ -337,13 +366,6 @@ public class MainActivity extends Activity {
                                 finalAnswer
                         );
 
-                        // Answer ko automatically top par rakho
-                        resultScroll.post(() ->
-                                resultScroll.fullScroll(
-                                        ScrollView.FOCUS_UP
-                                )
-                        );
-
                     } else {
 
                         result.setText(
@@ -370,6 +392,10 @@ public class MainActivity extends Activity {
 
         }).start();
     }
+
+    // ==============================================
+    // IMAGE → BASE64
+    // ==============================================
 
     private String convertImageToBase64(
             Uri uri
@@ -452,6 +478,10 @@ public class MainActivity extends Activity {
                 + base64;
     }
 
+    // ==============================================
+    // JSON ESCAPE
+    // ==============================================
+
     private String escapeJson(
             String text
     ) {
@@ -482,6 +512,10 @@ public class MainActivity extends Activity {
                         "\\t"
                 );
     }
+
+    // ==============================================
+    // READ SERVER RESPONSE
+    // ==============================================
 
     private String readStream(
             InputStream inputStream
@@ -518,6 +552,10 @@ public class MainActivity extends Activity {
                 StandardCharsets.UTF_8.name()
         );
     }
+
+    // ==============================================
+    // EXTRACT JSON VALUE
+    // ==============================================
 
     private String extractJsonValue(
             String json,
@@ -621,6 +659,10 @@ public class MainActivity extends Activity {
         return value.toString();
     }
 
+    // ==============================================
+    // OPEN PHOTO PICKER
+    // ==============================================
+
     private void openPhotoPicker() {
 
         Intent intent =
@@ -639,6 +681,10 @@ public class MainActivity extends Activity {
                 PICK_IMAGE
         );
     }
+
+    // ==============================================
+    // PHOTO RESULT
+    // ==============================================
 
     @Override
     protected void onActivityResult(
@@ -681,4 +727,4 @@ public class MainActivity extends Activity {
             }
         }
     }
-            }
+                }
