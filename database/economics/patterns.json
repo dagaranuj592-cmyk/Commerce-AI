@@ -1,0 +1,746 @@
+{
+  "subject": "Economics",
+  "database_version": "1.0",
+  "purpose": "Economics question pattern recognition and solution planning",
+
+  "patterns": [
+
+    {
+      "id": "demand",
+      "chapter": "Theory of Demand",
+      "keywords": ["demand", "quantity demanded", "law of demand"],
+      "required_data": ["price", "quantity"],
+      "method": [
+        "Identify price and quantity relationship",
+        "Apply law of demand",
+        "Explain inverse relationship"
+      ],
+      "formula": "Other things remaining constant, Price ↑ → Quantity Demanded ↓"
+    },
+
+    {
+      "id": "elasticity_percentage_method",
+      "chapter": "Elasticity of Demand",
+      "keywords": [
+        "elasticity of demand",
+        "percentage method",
+        "price elasticity"
+      ],
+      "required_data": [
+        "percentage_change_quantity",
+        "percentage_change_price"
+      ],
+      "method": [
+        "Calculate percentage change in quantity demanded",
+        "Calculate percentage change in price",
+        "Divide the two"
+      ],
+      "formula": "Ed = Percentage Change in Quantity Demanded / Percentage Change in Price"
+    },
+
+    {
+      "id": "elasticity_total_expenditure",
+      "chapter": "Elasticity of Demand",
+      "keywords": [
+        "total expenditure",
+        "total outlay",
+        "elasticity",
+        "price and expenditure"
+      ],
+      "required_data": [
+        "old_price",
+        "new_price",
+        "old_expenditure",
+        "new_expenditure"
+      ],
+      "method": [
+        "Compare price change",
+        "Compare total expenditure change",
+        "Determine elastic, inelastic or unitary elasticity"
+      ],
+      "formula": "Total Expenditure = Price × Quantity"
+    },
+
+    {
+      "id": "elasticity_point_method",
+      "chapter": "Elasticity of Demand",
+      "keywords": [
+        "point elasticity",
+        "elasticity at a point",
+        "point method"
+      ],
+      "required_data": [
+        "lower_quantity",
+        "upper_quantity",
+        "lower_price",
+        "upper_price"
+      ],
+      "method": [
+        "Identify relevant values from demand curve",
+        "Apply point elasticity formula"
+      ],
+      "formula": "Ed = Lower Segment / Upper Segment"
+    },
+
+    {
+      "id": "elasticity_arc_method",
+      "chapter": "Elasticity of Demand",
+      "keywords": [
+        "arc elasticity",
+        "elasticity between two points"
+      ],
+      "required_data": [
+        "q1",
+        "q2",
+        "p1",
+        "p2"
+      ],
+      "method": [
+        "Find change in quantity",
+        "Find change in price",
+        "Calculate average quantity",
+        "Calculate average price",
+        "Apply arc elasticity formula"
+      ],
+      "formula": "Ed = (ΔQ / Average Q) ÷ (ΔP / Average P)"
+    },
+
+    {
+      "id": "supply",
+      "chapter": "Theory of Supply",
+      "keywords": [
+        "supply",
+        "quantity supplied",
+        "law of supply"
+      ],
+      "required_data": [
+        "price",
+        "quantity supplied"
+      ],
+      "method": [
+        "Identify price and quantity supplied",
+        "Apply law of supply"
+      ],
+      "formula": "Other things remaining constant, Price ↑ → Quantity Supplied ↑"
+    },
+
+    {
+      "id": "elasticity_supply",
+      "chapter": "Elasticity of Supply",
+      "keywords": [
+        "elasticity of supply",
+        "price elasticity of supply"
+      ],
+      "required_data": [
+        "percentage_change_supply",
+        "percentage_change_price"
+      ],
+      "method": [
+        "Calculate percentage change in supply",
+        "Calculate percentage change in price",
+        "Divide the two"
+      ],
+      "formula": "Es = Percentage Change in Quantity Supplied / Percentage Change in Price"
+    },
+
+    {
+      "id": "consumer_equilibrium_utility",
+      "chapter": "Consumer Equilibrium",
+      "keywords": [
+        "consumer equilibrium",
+        "marginal utility",
+        "total utility",
+        "utility"
+      ],
+      "required_data": [
+        "marginal_utilities",
+        "price"
+      ],
+      "method": [
+        "Compare marginal utility with price",
+        "Apply consumer equilibrium condition"
+      ],
+      "formula": "MUx / Px = MUy / Py"
+    },
+
+    {
+      "id": "consumer_equilibrium_indifference_curve",
+      "chapter": "Consumer Equilibrium",
+      "keywords": [
+        "indifference curve",
+        "consumer equilibrium",
+        "MRS",
+        "budget line"
+      ],
+      "required_data": [
+        "MRS",
+        "prices"
+      ],
+      "method": [
+        "Identify MRS",
+        "Identify price ratio",
+        "Check equilibrium condition"
+      ],
+      "formula": "MRSxy = Px / Py"
+    },
+
+    {
+      "id": "budget_line",
+      "chapter": "Consumer Behaviour",
+      "keywords": [
+        "budget line",
+        "budget constraint",
+        "income",
+        "price of x",
+        "price of y"
+      ],
+      "required_data": [
+        "income",
+        "price_x",
+        "price_y"
+      ],
+      "method": [
+        "Calculate maximum possible quantity of X",
+        "Calculate maximum possible quantity of Y",
+        "Construct budget equation"
+      ],
+      "formula": "PxX + PyY = M"
+    },
+
+    {
+      "id": "production_function",
+      "chapter": "Production",
+      "keywords": [
+        "production function",
+        "total product",
+        "average product",
+        "marginal product"
+      ],
+      "required_data": [
+        "input",
+        "output"
+      ],
+      "method": [
+        "Calculate Total Product",
+        "Calculate Average Product",
+        "Calculate Marginal Product"
+      ],
+      "formula": "AP = TP / Units of Variable Factor; MP = Change in TP / Change in Variable Factor"
+    },
+
+    {
+      "id": "total_average_marginal_cost",
+      "chapter": "Cost",
+      "keywords": [
+        "total cost",
+        "average cost",
+        "marginal cost",
+        "fixed cost",
+        "variable cost"
+      ],
+      "required_data": [
+        "fixed_cost",
+        "variable_cost",
+        "output"
+      ],
+      "method": [
+        "Calculate Total Cost",
+        "Calculate Average Cost",
+        "Calculate Marginal Cost"
+      ],
+      "formula": "TC = TFC + TVC; AC = TC / Q; MC = Change in TC / Change in Q"
+    },
+
+    {
+      "id": "revenue",
+      "chapter": "Revenue",
+      "keywords": [
+        "total revenue",
+        "average revenue",
+        "marginal revenue",
+        "TR",
+        "AR",
+        "MR"
+      ],
+      "required_data": [
+        "price",
+        "quantity",
+        "revenue"
+      ],
+      "method": [
+        "Calculate Total Revenue",
+        "Calculate Average Revenue",
+        "Calculate Marginal Revenue"
+      ],
+      "formula": "TR = Price × Quantity; AR = TR / Q; MR = Change in TR / Change in Q"
+    },
+
+    {
+      "id": "producer_equilibrium",
+      "chapter": "Producer Behaviour",
+      "keywords": [
+        "producer equilibrium",
+        "profit maximisation",
+        "MR MC"
+      ],
+      "required_data": [
+        "MR",
+        "MC"
+      ],
+      "method": [
+        "Compare MR and MC",
+        "Find output where MR = MC",
+        "Check MC is rising after equilibrium"
+      ],
+      "formula": "Producer Equilibrium: MR = MC and MC should be rising"
+    },
+
+    {
+      "id": "perfect_competition",
+      "chapter": "Forms of Market",
+      "keywords": [
+        "perfect competition",
+        "price taker",
+        "firm equilibrium"
+      ],
+      "required_data": [
+        "price",
+        "AR",
+        "MR",
+        "MC"
+      ],
+      "method": [
+        "Identify market characteristics",
+        "Use P = AR = MR",
+        "Determine equilibrium output using MR = MC"
+      ],
+      "formula": "Under Perfect Competition: AR = MR = Price"
+    },
+
+    {
+      "id": "monopoly",
+      "chapter": "Forms of Market",
+      "keywords": [
+        "monopoly",
+        "monopolist",
+        "single seller"
+      ],
+      "required_data": [
+        "AR",
+        "MR",
+        "MC"
+      ],
+      "method": [
+        "Identify monopoly conditions",
+        "Determine equilibrium where MR = MC",
+        "Find price from demand/AR curve"
+      ],
+      "formula": "Monopoly Equilibrium: MR = MC"
+    },
+
+    {
+      "id": "national_income_gdp",
+      "chapter": "National Income",
+      "keywords": [
+        "GDP",
+        "gross domestic product",
+        "national income",
+        "domestic product"
+      ],
+      "required_data": [
+        "consumption",
+        "investment",
+        "government_expenditure",
+        "net_exports"
+      ],
+      "method": [
+        "Identify expenditure components",
+        "Add consumption, investment and government expenditure",
+        "Add net exports"
+      ],
+      "formula": "GDP = C + I + G + (X − M)"
+    },
+
+    {
+      "id": "national_income_value_added",
+      "chapter": "National Income",
+      "keywords": [
+        "value added method",
+        "gross value added",
+        "value added"
+      ],
+      "required_data": [
+        "output_value",
+        "intermediate_consumption"
+      ],
+      "method": [
+        "Calculate value of output",
+        "Deduct intermediate consumption",
+        "Add value added across producing units"
+      ],
+      "formula": "Value Added = Value of Output − Intermediate Consumption"
+    },
+
+    {
+      "id": "national_income_income_method",
+      "chapter": "National Income",
+      "keywords": [
+        "income method",
+        "factor income",
+        "national income"
+      ],
+      "required_data": [
+        "compensation",
+        "rent",
+        "interest",
+        "profit"
+      ],
+      "method": [
+        "Identify factor incomes",
+        "Add compensation of employees",
+        "Add rent",
+        "Add interest",
+        "Add profit"
+      ],
+      "formula": "Factor Income = Compensation + Rent + Interest + Profit"
+    },
+
+    {
+      "id": "money_supply",
+      "chapter": "Money and Banking",
+      "keywords": [
+        "money supply",
+        "money",
+        "currency",
+        "deposits"
+      ],
+      "required_data": [
+        "currency",
+        "demand_deposits"
+      ],
+      "method": [
+        "Identify components of money supply",
+        "Add relevant components"
+      ],
+      "formula": "Money Supply = Currency with Public + Relevant Deposits"
+    },
+
+    {
+      "id": "money_multiplier",
+      "chapter": "Money and Banking",
+      "keywords": [
+        "money multiplier",
+        "deposit multiplier",
+        "reserve ratio"
+      ],
+      "required_data": [
+        "reserve_ratio"
+      ],
+      "method": [
+        "Convert reserve ratio into decimal",
+        "Take reciprocal"
+      ],
+      "formula": "Money Multiplier = 1 / Reserve Ratio"
+    },
+
+    {
+      "id": "credit_creation",
+      "chapter": "Money and Banking",
+      "keywords": [
+        "credit creation",
+        "deposit creation",
+        "commercial bank"
+      ],
+      "required_data": [
+        "initial_deposit",
+        "reserve_ratio"
+      ],
+      "method": [
+        "Calculate money multiplier",
+        "Multiply initial deposit by multiplier"
+      ],
+      "formula": "Total Deposit Creation = Initial Deposit × Money Multiplier"
+    },
+
+    {
+      "id": "government_budget",
+      "chapter": "Government Budget",
+      "keywords": [
+        "government budget",
+        "budget",
+        "receipts",
+        "expenditure"
+      ],
+      "required_data": [
+        "revenue_receipts",
+        "capital_receipts",
+        "revenue_expenditure",
+        "capital_expenditure"
+      ],
+      "method": [
+        "Classify receipts",
+        "Classify expenditure",
+        "Calculate relevant deficits"
+      ],
+      "formula": "Total Receipts = Revenue Receipts + Capital Receipts"
+    },
+
+    {
+      "id": "revenue_deficit",
+      "chapter": "Government Budget",
+      "keywords": [
+        "revenue deficit",
+        "revenue receipts",
+        "revenue expenditure"
+      ],
+      "required_data": [
+        "revenue_expenditure",
+        "revenue_receipts"
+      ],
+      "method": [
+        "Subtract revenue receipts from revenue expenditure"
+      ],
+      "formula": "Revenue Deficit = Revenue Expenditure − Revenue Receipts"
+    },
+
+    {
+      "id": "fiscal_deficit",
+      "chapter": "Government Budget",
+      "keywords": [
+        "fiscal deficit",
+        "total expenditure",
+        "total receipts"
+      ],
+      "required_data": [
+        "total_expenditure",
+        "revenue_receipts",
+        "non_debt_capital_receipts"
+      ],
+      "method": [
+        "Calculate total expenditure",
+        "Deduct revenue receipts",
+        "Deduct non-debt capital receipts"
+      ],
+      "formula": "Fiscal Deficit = Total Expenditure − Total Receipts excluding Borrowings"
+    },
+
+    {
+      "id": "primary_deficit",
+      "chapter": "Government Budget",
+      "keywords": [
+        "primary deficit",
+        "fiscal deficit",
+        "interest payments"
+      ],
+      "required_data": [
+        "fiscal_deficit",
+        "interest_payments"
+      ],
+      "method": [
+        "Subtract interest payments from fiscal deficit"
+      ],
+      "formula": "Primary Deficit = Fiscal Deficit − Interest Payments"
+    },
+
+    {
+      "id": "balance_of_payments",
+      "chapter": "Balance of Payments",
+      "keywords": [
+        "balance of payments",
+        "BOP",
+        "current account",
+        "capital account"
+      ],
+      "required_data": [
+        "current_account",
+        "capital_account"
+      ],
+      "method": [
+        "Classify transactions",
+        "Calculate current account balance",
+        "Calculate capital account balance",
+        "Determine overall position"
+      ],
+      "formula": "Overall BOP = Current Account + Capital Account"
+    },
+
+    {
+      "id": "foreign_exchange_rate",
+      "chapter": "Balance of Payments",
+      "keywords": [
+        "foreign exchange",
+        "exchange rate",
+        "currency",
+        "dollar"
+      ],
+      "required_data": [
+        "exchange_rate",
+        "foreign_currency"
+      ],
+      "method": [
+        "Identify currency being converted",
+        "Apply exchange rate",
+        "Check whether rate is direct or indirect"
+      ],
+      "formula": "Domestic Currency Value = Foreign Currency Amount × Applicable Exchange Rate"
+    },
+
+    {
+      "id": "inflation",
+      "chapter": "Macroeconomics",
+      "keywords": [
+        "inflation",
+        "price level",
+        "general price level"
+      ],
+      "required_data": [
+        "price_index_current",
+        "price_index_previous"
+      ],
+      "method": [
+        "Calculate change in price index",
+        "Divide by previous index",
+        "Multiply by 100"
+      ],
+      "formula": "Inflation Rate = (Current Price Index − Previous Price Index) / Previous Price Index × 100"
+    },
+
+    {
+      "id": "unemployment",
+      "chapter": "Macroeconomics",
+      "keywords": [
+        "unemployment",
+        "unemployment rate",
+        "labour force"
+      ],
+      "required_data": [
+        "unemployed",
+        "labour_force"
+      ],
+      "method": [
+        "Divide unemployed persons by labour force",
+        "Multiply by 100"
+      ],
+      "formula": "Unemployment Rate = Unemployed / Labour Force × 100"
+    },
+
+    {
+      "id": "multiplier",
+      "chapter": "Income Determination",
+      "keywords": [
+        "multiplier",
+        "investment multiplier",
+        "income multiplier",
+        "MPC",
+        "MPS"
+      ],
+      "required_data": [
+        "MPC"
+      ],
+      "method": [
+        "Identify MPC",
+        "Calculate multiplier"
+      ],
+      "formula": "K = 1 / (1 − MPC)"
+    },
+
+    {
+      "id": "marginal_propensity_to_consume",
+      "chapter": "Income Determination",
+      "keywords": [
+        "MPC",
+        "marginal propensity to consume",
+        "consumption"
+      ],
+      "required_data": [
+        "change_in_consumption",
+        "change_in_income"
+      ],
+      "method": [
+        "Calculate change in consumption",
+        "Calculate change in income",
+        "Divide the two"
+      ],
+      "formula": "MPC = ΔC / ΔY"
+    },
+
+    {
+      "id": "marginal_propensity_to_save",
+      "chapter": "Income Determination",
+      "keywords": [
+        "MPS",
+        "marginal propensity to save",
+        "saving"
+      ],
+      "required_data": [
+        "change_in_saving",
+        "change_in_income"
+      ],
+      "method": [
+        "Calculate change in saving",
+        "Calculate change in income",
+        "Divide the two"
+      ],
+      "formula": "MPS = ΔS / ΔY"
+    },
+
+    {
+      "id": "relationship_mpc_mps",
+      "chapter": "Income Determination",
+      "keywords": [
+        "MPC MPS",
+        "relationship between MPC and MPS"
+      ],
+      "required_data": [
+        "MPC",
+        "MPS"
+      ],
+      "method": [
+        "Use relationship between MPC and MPS"
+      ],
+      "formula": "MPC + MPS = 1"
+    },
+
+    {
+      "id": "circular_flow",
+      "chapter": "Macroeconomics",
+      "keywords": [
+        "circular flow",
+        "income flow",
+        "two sector",
+        "three sector"
+      ],
+      "required_data": [
+        "households",
+        "firms",
+        "government",
+        "foreign_sector"
+      ],
+      "method": [
+        "Identify sectors",
+        "Identify real flow",
+        "Identify money flow",
+        "Identify leakages and injections"
+      ],
+      "formula": "In equilibrium, Leakages = Injections"
+    },
+
+    {
+      "id": "deflation",
+      "chapter": "Macroeconomics",
+      "keywords": [
+        "deflation",
+        "fall in price level"
+      ],
+      "required_data": [
+        "price_indices"
+      ],
+      "method": [
+        "Compare current and previous general price level",
+        "Identify sustained fall"
+      ],
+      "formula": "Deflation = Sustained fall in general price level"
+    }
+
+  ]
+    }
