@@ -37,6 +37,9 @@ public class MainActivity extends Activity {
     private EditText questionInput;
     private TextView result;
 
+    // Answer scrolling ke liye class-level variable
+    private ScrollView resultScroll;
+
     private Uri selectedImageUri = null;
 
     @Override
@@ -134,9 +137,11 @@ public class MainActivity extends Activity {
         // ==============================
 
         result = new TextView(this);
+
         result.setText(
                 "Your complete step-by-step solution will appear here."
         );
+
         result.setTextSize(16);
         result.setTextColor(Color.DKGRAY);
         result.setPadding(10, 30, 10, 20);
@@ -147,7 +152,7 @@ public class MainActivity extends Activity {
         // SCROLLABLE ANSWER AREA
         // ==============================
 
-        ScrollView resultScroll = new ScrollView(this);
+        resultScroll = new ScrollView(this);
         resultScroll.setFillViewport(true);
 
         resultScroll.addView(
@@ -332,6 +337,13 @@ public class MainActivity extends Activity {
                                 finalAnswer
                         );
 
+                        // Answer ko automatically top par rakho
+                        resultScroll.post(() ->
+                                resultScroll.fullScroll(
+                                        ScrollView.FOCUS_UP
+                                )
+                        );
+
                     } else {
 
                         result.setText(
@@ -339,13 +351,6 @@ public class MainActivity extends Activity {
                                         + finalError
                         );
                     }
-
-                    // Answer ke start par wapas scroll
-                    resultScroll.post(() ->
-                            resultScroll.fullScroll(
-                                    ScrollView.FOCUS_UP
-                            )
-                    );
                 });
 
             } catch (Exception e) {
@@ -676,4 +681,4 @@ public class MainActivity extends Activity {
             }
         }
     }
-}
+            }
