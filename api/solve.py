@@ -1,7 +1,7 @@
 import os
 import json
 import re
-import base64
+
 from http.server import BaseHTTPRequestHandler
 
 from openai import OpenAI
@@ -10,10 +10,12 @@ from api.calculator import calculate
 
 
 # ==========================================
-# DATABASE PATH
+# PATHS
 # ==========================================
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+BASE_DIR = os.path.dirname(
+    os.path.dirname(__file__)
+)
 
 PATTERN_DATABASE_PATH = os.path.join(
     BASE_DIR,
@@ -24,7 +26,7 @@ PATTERN_DATABASE_PATH = os.path.join(
 
 
 # ==========================================
-# LOAD PATTERN DATABASE
+# LOAD DATABASE
 # ==========================================
 
 def load_database():
@@ -47,19 +49,10 @@ def load_database():
 
 
 # ==========================================
-# NUMBER EXTRACTION
+# EXTRACT MONEY NUMBERS
 # ==========================================
 
 def extract_money_numbers(text):
-
-    """
-    Finds numbers such as:
-
-    ₹3,20,000
-    3,20,000
-    ₹200000
-    200000
-    """
 
     matches = re.findall(
         r"(?:₹\s*)?(\d{1,3}(?:,\d{2,3})*(?:\.\d+)?|\d+(?:\.\d+)?)",
@@ -72,11 +65,11 @@ def extract_money_numbers(text):
 
         try:
 
-            value = float(
-                item.replace(",", "")
+            numbers.append(
+                float(
+                    item.replace(",", "")
+                )
             )
-
-            numbers.append(value)
 
         except Exception:
 
@@ -92,8 +85,12 @@ def extract_money_numbers(text):
 def extract_percentage(text):
 
     patterns = [
+
         r"(\d+(?:\.\d+)?)\s*%",
-        r"rate\s*(?:of\s*)?(?:return\s*)?(?:is|=)?\s*(\d+(?:\.\d+)?)"
+
+        r"rate\s*(?:of\s*)?(?:return\s*)?"
+        r"(?:is|=)?\s*(\d+(?:\.\d+)?)"
+
     ]
 
     for pattern in patterns:
@@ -126,9 +123,17 @@ def extract_percentage(text):
 def extract_years_purchase(text):
 
     patterns = [
-        r"(\d+(?:\.\d+)?)\s*years?\s*purchase",
-        r"(\d+(?:\.\d+)?)\s*year\s*purchase",
-        r"years?\s*purchase\s*(?:of|=)?\s*(\d+(?:\.\d+)?)"
+
+        r"(\d+(?:\.\d+)?)\s*years?['’]?\s*purchase",
+
+        r"(\d+(?:\.\d+)?)\s*year['’]?\s*purchase",
+
+        r"years?['’]?\s*purchase"
+        r"\s*(?:of|=)?\s*(\d+(?:\.\d+)?)",
+
+        r"purchase\s*(?:of|=)?\s*"
+        r"(\d+(?:\.\d+)?)\s*years?"
+
     ]
 
     for pattern in patterns:
@@ -161,8 +166,14 @@ def extract_years_purchase(text):
 def extract_capital_employed(text):
 
     patterns = [
-        r"capital employed\s*(?:is|=|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)",
-        r"capital employed.{0,20}?₹?\s*([\d,]+(?:\.\d+)?)"
+
+        r"capital employed\s*"
+        r"(?:is|=|of)?\s*₹?\s*"
+        r"([\d,]+(?:\.\d+)?)",
+
+        r"capital employed.{0,30}?"
+        r"₹?\s*([\d,]+(?:\.\d+)?)"
+
     ]
 
     for pattern in patterns:
@@ -198,8 +209,15 @@ def extract_capital_employed(text):
 def extract_average_profit(text):
 
     patterns = [
-        r"average profit\s*(?:is|=|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)",
-        r"average profits?\s*(?:is|=|of)?\s*₹?\s*([\d,]+(?:\.\d+)?)"
+
+        r"average profit\s*"
+        r"(?:is|=|of)?\s*₹?\s*"
+        r"([\d,]+(?:\.\d+)?)",
+
+        r"average profits?\s*"
+        r"(?:is|=|of)?\s*₹?\s*"
+        r"([\d,]+(?:\.\d+)?)"
+
     ]
 
     for pattern in patterns:
@@ -235,15 +253,15 @@ def extract_average_profit(text):
 def extract_historical_profits(text):
 
     """
-    Detect historical profits from questions like:
+    Detects questions like:
 
-    The profits of the firm for the last four years were
-    ₹3,20,000, ₹2,80,000, ₹3,60,000 and ₹4,00,000.
+    The profits of the firm for the last four
+    years were ₹3,20,000, ₹2,80,000,
+    ₹3,60,000 and ₹4,00,000.
     """
 
     lower_text = text.lower()
 
-    # Historical-profit question check
     if not (
         "profit" in lower_text
         and (
@@ -252,23 +270,25 @@ def extract_historical_profits(text):
             or "past" in lower_text
         )
     ):
+
         return []
 
-    # Find the part after "profits ... were/are"
     match = re.search(
-        r"profits?.*?\b(?:were|are)\b(.*?)(?:\.|calculate|$)",
+        r"profits?.*?\b(?:were|are)\b"
+        r"(.*?)(?:\.|calculate|$)",
         text,
         re.IGNORECASE
     )
 
     if not match:
+
         return []
 
     profit_section = match.group(1)
 
-    # Extract only money-like numbers from profit section
     matches = re.findall(
-        r"(?:₹\s*)?(\d{1,3}(?:,\d{2,3})*(?:\.\d+)?|\d+(?:\.\d+)?)",
+        r"(?:₹\s*)?"
+        r"(\d{1,3}(?:,\d{2,3})*(?:\.\d+)?|\d+(?:\.\d+)?)",
         profit_section
     )
 
@@ -283,6 +303,7 @@ def extract_historical_profits(text):
             )
 
             if value >= 1000:
+
                 profits.append(value)
 
         except Exception:
@@ -293,7 +314,7 @@ def extract_historical_profits(text):
 
 
 # ==========================================
-# FIND DATABASE PATTERN
+# FIND PATTERN IN DATABASE
 # ==========================================
 
 def find_pattern(question):
@@ -334,469 +355,8 @@ def find_pattern(question):
 
 
 # ==========================================
-# LOCAL ACCOUNTANCY ENGINE
+# FIND LABELED NUMBER
 # ==========================================
-
-def local_solve(question):
-
-    q = question.lower()
-
-
-    # ======================================
-    # HISTORICAL PROFITS + GOODWILL
-    # ======================================
-
-    if (
-        "goodwill" in q
-        and "profit" in q
-        and (
-            "last" in q
-            or "previous" in q
-            or "past" in q
-        )
-    ):
-
-        profits = extract_historical_profits(
-            question
-        )
-
-        years_purchase = extract_years_purchase(
-            question
-        )
-
-        capital = extract_capital_employed(
-            question
-        )
-
-        rate = extract_percentage(
-            question
-        )
-
-        # ----------------------------------
-        # Super Profit Method
-        # ----------------------------------
-
-        if (
-            len(profits) >= 2
-            and years_purchase is not None
-            and capital is not None
-            and rate is not None
-        ):
-
-            total = sum(profits)
-
-            average_profit = (
-                total / len(profits)
-            )
-
-            result = calculate({
-                "type": "goodwill_super_profit",
-                "average_profit": average_profit,
-                "capital_employed": capital,
-                "normal_rate": rate,
-                "years_purchase": years_purchase
-            })
-
-            if result:
-
-                result["historical_profits"] = profits
-
-                # Add detailed first steps
-                result["steps"] = [
-                    "Profits of previous years:",
-                    " + ".join(
-                        "₹" + format_number(x)
-                        for x in profits
-                    ),
-                    "",
-                    "Total Profit = "
-                    + " + ".join(
-                        "₹" + format_number(x)
-                        for x in profits
-                    ),
-                    "Total Profit = ₹"
-                    + format_number(total),
-                    "",
-                    "Average Profit = Total Profit ÷ Number of Years",
-                    "Average Profit = ₹"
-                    + format_number(total)
-                    + " ÷ "
-                    + str(len(profits)),
-                    "Average Profit = ₹"
-                    + format_number(average_profit),
-                    "",
-                    "Normal Profit = Capital Employed × Normal Rate / 100",
-                    "Normal Profit = ₹"
-                    + format_number(capital)
-                    + " × "
-                    + format_number(rate)
-                    + " / 100",
-                    "Normal Profit = ₹"
-                    + format_number(
-                        capital * rate / 100
-                    ),
-                    "",
-                    "Super Profit = Average Profit − Normal Profit",
-                    "Super Profit = ₹"
-                    + format_number(average_profit)
-                    + " − ₹"
-                    + format_number(
-                        capital * rate / 100
-                    ),
-                    "Super Profit = ₹"
-                    + format_number(
-                        average_profit
-                        - (capital * rate / 100)
-                    ),
-                    "",
-                    "Goodwill = Super Profit × Years' Purchase",
-                    "Goodwill = ₹"
-                    + format_number(
-                        average_profit
-                        - (capital * rate / 100)
-                    )
-                    + " × "
-                    + format_number(
-                        years_purchase
-                    ),
-                    "Goodwill = ₹"
-                    + format_number(
-                        (
-                            average_profit
-                            - (
-                                capital
-                                * rate
-                                / 100
-                            )
-                        )
-                        * years_purchase
-                    )
-                ]
-
-                return result
-
-
-        # ----------------------------------
-        # Average Profit Method
-        # ----------------------------------
-
-        if (
-            len(profits) >= 2
-            and years_purchase is not None
-        ):
-
-            result = calculate({
-                "type": "average_profit",
-                "profits": profits
-            })
-
-            if result:
-
-                average_profit = result["value"]
-
-                goodwill_result = calculate({
-                    "type": "goodwill_average_profit",
-                    "average_profit": average_profit,
-                    "years_purchase": years_purchase
-                })
-
-                if goodwill_result:
-
-                    goodwill_result["steps"] = [
-                        "Profits of previous years:",
-                        " + ".join(
-                            "₹" + format_number(x)
-                            for x in profits
-                        ),
-                        "",
-                        "Total Profit = ₹"
-                        + format_number(
-                            sum(profits)
-                        ),
-                        "Average Profit = Total Profit ÷ Number of Years",
-                        "Average Profit = ₹"
-                        + format_number(
-                            average_profit
-                        )
-                        + " ÷ "
-                        + str(len(profits)),
-                        "Average Profit = ₹"
-                        + format_number(
-                            average_profit
-                        ),
-                        "",
-                        "Goodwill = Average Profit × Years' Purchase",
-                        "Goodwill = ₹"
-                        + format_number(
-                            average_profit
-                        )
-                        + " × "
-                        + format_number(
-                            years_purchase
-                        ),
-                        "Goodwill = ₹"
-                        + format_number(
-                            average_profit
-                            * years_purchase
-                        )
-                    ]
-
-                    return goodwill_result
-
-
-    # ======================================
-    # AVERAGE PROFIT
-    # ======================================
-
-    average_profit = extract_average_profit(
-        question
-    )
-
-    if average_profit is not None:
-
-        # Super Profit
-        if (
-            "super profit" in q
-            and capital_is_present(question)
-            and extract_percentage(question) is not None
-        ):
-
-            capital = extract_capital_employed(
-                question
-            )
-
-            rate = extract_percentage(
-                question
-            )
-
-            return calculate({
-                "type": "super_profit",
-                "average_profit": average_profit,
-                "capital_employed": capital,
-                "normal_rate": rate
-            })
-
-
-    # ======================================
-    # CURRENT RATIO
-    # ======================================
-
-    if (
-        "current ratio" in q
-        and "current asset" in q
-        and "current liabil" in q
-    ):
-
-        assets = find_labeled_number(
-            question,
-            [
-                "current assets",
-                "current asset"
-            ]
-        )
-
-        liabilities = find_labeled_number(
-            question,
-            [
-                "current liabilities",
-                "current liability"
-            ]
-        )
-
-        if (
-            assets is not None
-            and liabilities is not None
-        ):
-
-            return calculate({
-                "type": "current_ratio",
-                "current_assets": assets,
-                "current_liabilities": liabilities
-            })
-
-
-    # ======================================
-    # QUICK RATIO
-    # ======================================
-
-    if (
-        (
-            "quick ratio" in q
-            or "liquid ratio" in q
-        )
-        and "current liabil" in q
-    ):
-
-        quick_assets = find_labeled_number(
-            question,
-            [
-                "quick assets",
-                "quick asset"
-            ]
-        )
-
-        liabilities = find_labeled_number(
-            question,
-            [
-                "current liabilities",
-                "current liability"
-            ]
-        )
-
-        if (
-            quick_assets is not None
-            and liabilities is not None
-        ):
-
-            return calculate({
-                "type": "quick_ratio",
-                "quick_assets": quick_assets,
-                "current_liabilities": liabilities
-            })
-
-
-    # ======================================
-    # GROSS PROFIT RATIO
-    # ======================================
-
-    if "gross profit ratio" in q:
-
-        gross_profit = find_labeled_number(
-            question,
-            [
-                "gross profit"
-            ]
-        )
-
-        revenue = find_labeled_number(
-            question,
-            [
-                "revenue",
-                "sales"
-            ]
-        )
-
-        if (
-            gross_profit is not None
-            and revenue is not None
-        ):
-
-            return calculate({
-                "type": "gross_profit_ratio",
-                "gross_profit": gross_profit,
-                "revenue": revenue
-            })
-
-
-    # ======================================
-    # NET PROFIT RATIO
-    # ======================================
-
-    if "net profit ratio" in q:
-
-        net_profit = find_labeled_number(
-            question,
-            [
-                "net profit"
-            ]
-        )
-
-        revenue = find_labeled_number(
-            question,
-            [
-                "revenue",
-                "sales"
-            ]
-        )
-
-        if (
-            net_profit is not None
-            and revenue is not None
-        ):
-
-            return calculate({
-                "type": "net_profit_ratio",
-                "net_profit": net_profit,
-                "revenue": revenue
-            })
-
-
-    # ======================================
-    # ROI
-    # ======================================
-
-    if (
-        "roi" in q
-        or "return on investment" in q
-    ):
-
-        operating_profit = find_labeled_number(
-            question,
-            [
-                "operating profit"
-            ]
-        )
-
-        capital = find_labeled_number(
-            question,
-            [
-                "capital employed"
-            ]
-        )
-
-        if (
-            operating_profit is not None
-            and capital is not None
-        ):
-
-            return calculate({
-                "type": "roi",
-                "operating_profit": operating_profit,
-                "capital_employed": capital
-            })
-
-
-    # ======================================
-    # SUPER PROFIT
-    # ======================================
-
-    if "super profit" in q:
-
-        capital = extract_capital_employed(
-            question
-        )
-
-        rate = extract_percentage(
-            question
-        )
-
-        if (
-            average_profit is not None
-            and capital is not None
-            and rate is not None
-        ):
-
-            return calculate({
-                "type": "super_profit",
-                "average_profit": average_profit,
-                "capital_employed": capital,
-                "normal_rate": rate
-            })
-
-
-    return None
-
-
-# ==========================================
-# HELPERS
-# ==========================================
-
-def capital_is_present(text):
-
-    return (
-        "capital employed" in text.lower()
-    )
-
 
 def find_labeled_number(
     text,
@@ -836,6 +396,10 @@ def find_labeled_number(
     return None
 
 
+# ==========================================
+# FORMAT NUMBER
+# ==========================================
+
 def format_number(number):
 
     if isinstance(number, float):
@@ -848,7 +412,550 @@ def format_number(number):
 
 
 # ==========================================
-# FORMAT RESULT
+# LOCAL ACCOUNTANCY SOLVER
+# ==========================================
+
+def local_solve(question):
+
+    q = question.lower()
+
+
+    # ======================================
+    # HISTORICAL PROFITS + GOODWILL
+    # ======================================
+
+    if (
+        "goodwill" in q
+        and "profit" in q
+        and (
+            "last" in q
+            or "previous" in q
+            or "past" in q
+        )
+    ):
+
+        profits = extract_historical_profits(
+            question
+        )
+
+        years_purchase = extract_years_purchase(
+            question
+        )
+
+        capital = extract_capital_employed(
+            question
+        )
+
+        rate = extract_percentage(
+            question
+        )
+
+
+        # ==================================
+        # SUPER PROFIT METHOD
+        # ==================================
+
+        if (
+            len(profits) >= 2
+            and years_purchase is not None
+            and capital is not None
+            and rate is not None
+        ):
+
+            total_profit = sum(profits)
+
+            average_profit = (
+                total_profit
+                / len(profits)
+            )
+
+            normal_profit = (
+                capital
+                * rate
+                / 100
+            )
+
+            super_profit = (
+                average_profit
+                - normal_profit
+            )
+
+            goodwill = (
+                super_profit
+                * years_purchase
+            )
+
+
+            return {
+                "success": True,
+
+                "title":
+                    "Goodwill - Super Profit Method",
+
+                "value":
+                    goodwill,
+
+                "steps": [
+
+                    "Given:",
+
+                    "Capital Employed = ₹"
+                    + format_number(capital),
+
+                    "Normal Rate of Return = "
+                    + format_number(rate)
+                    + "%",
+
+                    "Past Profits = "
+                    + ", ".join(
+                        "₹" + format_number(x)
+                        for x in profits
+                    ),
+
+                    "Years' Purchase = "
+                    + format_number(
+                        years_purchase
+                    ),
+
+                    "",
+
+                    "Step 1: Calculate Total Profit",
+
+                    "Total Profit = "
+                    + " + ".join(
+                        "₹" + format_number(x)
+                        for x in profits
+                    ),
+
+                    "Total Profit = ₹"
+                    + format_number(
+                        total_profit
+                    ),
+
+                    "",
+
+                    "Step 2: Calculate Average Profit",
+
+                    "Average Profit = "
+                    "Total Profit ÷ Number of Years",
+
+                    "Average Profit = ₹"
+                    + format_number(
+                        total_profit
+                    )
+                    + " ÷ "
+                    + str(len(profits)),
+
+                    "Average Profit = ₹"
+                    + format_number(
+                        average_profit
+                    ),
+
+                    "",
+
+                    "Step 3: Calculate Normal Profit",
+
+                    "Normal Profit = "
+                    "Capital Employed × Normal Rate / 100",
+
+                    "Normal Profit = ₹"
+                    + format_number(capital)
+                    + " × "
+                    + format_number(rate)
+                    + " / 100",
+
+                    "Normal Profit = ₹"
+                    + format_number(
+                        normal_profit
+                    ),
+
+                    "",
+
+                    "Step 4: Calculate Super Profit",
+
+                    "Super Profit = "
+                    "Average Profit − Normal Profit",
+
+                    "Super Profit = ₹"
+                    + format_number(
+                        average_profit
+                    )
+                    + " − ₹"
+                    + format_number(
+                        normal_profit
+                    ),
+
+                    "Super Profit = ₹"
+                    + format_number(
+                        super_profit
+                    ),
+
+                    "",
+
+                    "Step 5: Calculate Goodwill",
+
+                    "Goodwill = "
+                    "Super Profit × Years' Purchase",
+
+                    "Goodwill = ₹"
+                    + format_number(
+                        super_profit
+                    )
+                    + " × "
+                    + format_number(
+                        years_purchase
+                    ),
+
+                    "Goodwill = ₹"
+                    + format_number(
+                        goodwill
+                    )
+                ]
+            }
+
+
+        # ==================================
+        # AVERAGE PROFIT METHOD
+        # ==================================
+
+        if (
+            len(profits) >= 2
+            and years_purchase is not None
+        ):
+
+            average_result = calculate({
+                "type":
+                    "average_profit",
+
+                "profits":
+                    profits
+            })
+
+            if average_result.get(
+                "success"
+            ):
+
+                average_profit = (
+                    average_result["value"]
+                )
+
+                goodwill_result = calculate({
+
+                    "type":
+                        "goodwill_average_profit",
+
+                    "average_profit":
+                        average_profit,
+
+                    "years_purchase":
+                        years_purchase
+
+                })
+
+                if goodwill_result.get(
+                    "success"
+                ):
+
+                    return goodwill_result
+
+
+    # ======================================
+    # AVERAGE PROFIT GIVEN
+    # ======================================
+
+    average_profit = extract_average_profit(
+        question
+    )
+
+
+    # ======================================
+    # SUPER PROFIT
+    # ======================================
+
+    if "super profit" in q:
+
+        capital = extract_capital_employed(
+            question
+        )
+
+        rate = extract_percentage(
+            question
+        )
+
+        if (
+            average_profit is not None
+            and capital is not None
+            and rate is not None
+        ):
+
+            return calculate({
+
+                "type":
+                    "super_profit",
+
+                "average_profit":
+                    average_profit,
+
+                "capital_employed":
+                    capital,
+
+                "normal_rate":
+                    rate
+
+            })
+
+
+    # ======================================
+    # GOODWILL - AVERAGE PROFIT
+    # ======================================
+
+    if (
+        "goodwill" in q
+        and "average profit" in q
+    ):
+
+        years_purchase = extract_years_purchase(
+            question
+        )
+
+        if (
+            average_profit is not None
+            and years_purchase is not None
+        ):
+
+            return calculate({
+
+                "type":
+                    "goodwill_average_profit",
+
+                "average_profit":
+                    average_profit,
+
+                "years_purchase":
+                    years_purchase
+
+            })
+
+
+    # ======================================
+    # CURRENT RATIO
+    # ======================================
+
+    if (
+        "current ratio" in q
+        and "current asset" in q
+        and "current liabil" in q
+    ):
+
+        assets = find_labeled_number(
+            question,
+            [
+                "current assets",
+                "current asset"
+            ]
+        )
+
+        liabilities = find_labeled_number(
+            question,
+            [
+                "current liabilities",
+                "current liability"
+            ]
+        )
+
+        if (
+            assets is not None
+            and liabilities is not None
+        ):
+
+            return calculate({
+
+                "type":
+                    "current_ratio",
+
+                "current_assets":
+                    assets,
+
+                "current_liabilities":
+                    liabilities
+
+            })
+
+
+    # ======================================
+    # QUICK RATIO
+    # ======================================
+
+    if (
+        (
+            "quick ratio" in q
+            or "liquid ratio" in q
+        )
+        and "current liabil" in q
+    ):
+
+        quick_assets = find_labeled_number(
+            question,
+            [
+                "quick assets",
+                "quick asset"
+            ]
+        )
+
+        liabilities = find_labeled_number(
+            question,
+            [
+                "current liabilities",
+                "current liability"
+            ]
+        )
+
+        if (
+            quick_assets is not None
+            and liabilities is not None
+        ):
+
+            return calculate({
+
+                "type":
+                    "quick_ratio",
+
+                "quick_assets":
+                    quick_assets,
+
+                "current_liabilities":
+                    liabilities
+
+            })
+
+
+    # ======================================
+    # GROSS PROFIT RATIO
+    # ======================================
+
+    if "gross profit ratio" in q:
+
+        gross_profit = find_labeled_number(
+            question,
+            [
+                "gross profit"
+            ]
+        )
+
+        revenue = find_labeled_number(
+            question,
+            [
+                "revenue",
+                "sales"
+            ]
+        )
+
+        if (
+            gross_profit is not None
+            and revenue is not None
+        ):
+
+            return calculate({
+
+                "type":
+                    "gross_profit_ratio",
+
+                "gross_profit":
+                    gross_profit,
+
+                "revenue":
+                    revenue
+
+            })
+
+
+    # ======================================
+    # NET PROFIT RATIO
+    # ======================================
+
+    if "net profit ratio" in q:
+
+        net_profit = find_labeled_number(
+            question,
+            [
+                "net profit"
+            ]
+        )
+
+        revenue = find_labeled_number(
+            question,
+            [
+                "revenue",
+                "sales"
+            ]
+        )
+
+        if (
+            net_profit is not None
+            and revenue is not None
+        ):
+
+            return calculate({
+
+                "type":
+                    "net_profit_ratio",
+
+                "net_profit":
+                    net_profit,
+
+                "revenue":
+                    revenue
+
+            })
+
+
+    # ======================================
+    # ROI
+    # ======================================
+
+    if (
+        "roi" in q
+        or "return on investment" in q
+    ):
+
+        operating_profit = find_labeled_number(
+            question,
+            [
+                "operating profit"
+            ]
+        )
+
+        capital = find_labeled_number(
+            question,
+            [
+                "capital employed"
+            ]
+        )
+
+        if (
+            operating_profit is not None
+            and capital is not None
+        ):
+
+            return calculate({
+
+                "type":
+                    "roi",
+
+                "operating_profit":
+                    operating_profit,
+
+                "capital_employed":
+                    capital
+
+            })
+
+
+    return None
+
+
+# ==========================================
+# FORMAT LOCAL RESULT
 # ==========================================
 
 def format_result(result):
@@ -869,13 +976,12 @@ def format_result(result):
 
     lines = []
 
-    title = result.get(
-        "title",
-        "Solution"
-    )
-
     lines.append(
-        "📚 " + title
+        "📚 "
+        + result.get(
+            "title",
+            "Solution"
+        )
     )
 
     lines.append("")
@@ -893,9 +999,12 @@ def format_result(result):
         "value"
     )
 
-    title_lower = title.lower()
+    title = result.get(
+        "title",
+        ""
+    ).lower()
 
-    if "ratio" in title_lower:
+    if "ratio" in title:
 
         lines.append(
             "✅ Final Answer: "
@@ -905,7 +1014,10 @@ def format_result(result):
             + " : 1"
         )
 
-    elif isinstance(value, (int, float)):
+    elif isinstance(
+        value,
+        (int, float)
+    ):
 
         lines.append(
             "✅ Final Answer: ₹"
@@ -945,7 +1057,7 @@ def solve_with_ai(
 
         database_context = """
 
-Relevant pattern from our Commerce database:
+Relevant Commerce database pattern:
 
 Pattern:
 """ + pattern.get(
@@ -973,6 +1085,7 @@ Method:
             )
         )
 
+
     prompt = """
 You are Commerce AI.
 
@@ -982,17 +1095,19 @@ Subjects:
 - Accountancy
 - Economics
 
-Give an exam-ready, student-friendly solution.
+Give a student-friendly,
+exam-ready solution.
 
 For numerical questions:
-1. Identify the given information.
+
+1. Identify given information.
 2. Identify what is required.
 3. Write the formula.
 4. Substitute values.
-5. Show every important calculation.
+5. Show calculations step-by-step.
 6. Give the final answer clearly.
 
-Do not invent missing values.
+Do not invent missing information.
 
 """ + database_context + """
 
@@ -1000,28 +1115,49 @@ QUESTION:
 
 """ + question
 
+
     content = [
+
         {
-            "type": "input_text",
-            "text": prompt
+            "type":
+                "input_text",
+
+            "text":
+                prompt
         }
+
     ]
+
 
     if image:
 
         content.append({
-            "type": "input_image",
-            "image_url": image
+
+            "type":
+                "input_image",
+
+            "image_url":
+                image
+
         })
 
+
     response = client.responses.create(
+
         model="gpt-5.6-luna",
+
         input=[
+
             {
-                "role": "user",
-                "content": content
+                "role":
+                    "user",
+
+                "content":
+                    content
             }
+
         ]
+
     )
 
     return response.output_text
@@ -1064,6 +1200,11 @@ class handler(
                 ""
             )
 
+
+            # ==================================
+            # EMPTY QUESTION
+            # ==================================
+
             if (
                 not question
                 and not image
@@ -1082,7 +1223,8 @@ class handler(
                     json.dumps(
                         {
                             "success": False,
-                            "error": "Question ya photo required hai."
+                            "error":
+                                "Question ya photo required hai."
                         },
                         ensure_ascii=False
                     ).encode("utf-8")
@@ -1102,6 +1244,11 @@ class handler(
                 local_result = local_solve(
                     question
                 )
+
+
+            # ==================================
+            # LOCAL SUCCESS
+            # ==================================
 
             if (
                 local_result
@@ -1128,8 +1275,10 @@ class handler(
                         {
                             "success": True,
                             "answer": answer,
-                            "source": "local_database",
-                            "api_used": False
+                            "source":
+                                "local_database",
+                            "api_used":
+                                False
                         },
                         ensure_ascii=False
                     ).encode("utf-8")
@@ -1139,7 +1288,7 @@ class handler(
 
 
             # ==================================
-            # DATABASE PATTERN
+            # FIND DATABASE PATTERN
             # ==================================
 
             pattern = find_pattern(
@@ -1174,13 +1323,12 @@ class handler(
                         "answer": answer,
                         "source": "ai",
                         "api_used": True,
-                        "pattern": (
-                            pattern.get(
-                                "id"
+                        "pattern":
+                            (
+                                pattern.get("id")
+                                if pattern
+                                else None
                             )
-                            if pattern
-                            else None
-                        )
                     },
                     ensure_ascii=False
                 ).encode("utf-8")
