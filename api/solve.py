@@ -1,6 +1,8 @@
 import os
 import json
 import re
+import ast
+import operator as op
 import math
 
 from http.server import BaseHTTPRequestHandler
@@ -10,7 +12,7 @@ from api.calculator import calculate
 
 
 # =========================================================
-# PATHS
+# CONFIG
 # =========================================================
 
 BASE_DIR = os.path.dirname(
@@ -32,17 +34,14 @@ PATTERN_DATABASE_PATH = os.path.join(
 def load_database():
 
     try:
-
         with open(
             PATTERN_DATABASE_PATH,
             "r",
             encoding="utf-8"
-        ) as file:
-
-            return json.load(file)
+        ) as f:
+            return json.load(f)
 
     except Exception:
-
         return {"patterns": []}
 
 
@@ -57,7 +56,7 @@ def find_pattern(question):
 
     q = question.lower()
 
-    best = None
+    best_pattern = None
     best_score = 0
 
     for pattern in patterns:
@@ -77,40 +76,51 @@ def find_pattern(question):
         if score > best_score:
 
             best_score = score
-            best = pattern
+            best_pattern = pattern
 
-    return best
+    return best_pattern
 
 
 # =========================================================
-# NUMBER HELPERS
+# BASIC HELPERS
 # =========================================================
 
 def clean_number(value):
 
     try:
+
         return float(
-            str(value).replace(",", "").replace("₹", "").strip()
+            str(value)
+            .replace(",", "")
+            .replace("₹", "")
+            .strip()
         )
+
     except Exception:
+
         return None
 
 
-def format_number(number):
+def format_number(value):
 
-    if number is None:
+    if value is None:
         return "0"
 
-    if isinstance(number, float) and number.is_integer():
-        number = int(number)
+    if isinstance(value, float):
 
-    return f"{number:,}"
+        if value.is_integer():
+            value = int(value)
+
+    return f"{value:,}"
 
 
-def format_ratio(number):
+def format_decimal(value):
+
+    if value is None:
+        return "0"
 
     return (
-        f"{number:.2f}"
+        f"{value:.2f}"
         .rstrip("0")
         .rstrip(".")
     )
@@ -118,33 +128,30 @@ def format_ratio(number):
 
 def simplify_ratio(a, b):
 
-    if a is None or b is None:
-        return None
-
     if a == 0 and b == 0:
         return "0 : 0"
 
     scale = 1000000
 
-    a_int = round(a * scale)
-    b_int = round(b * scale)
+    ai = round(a * scale)
+    bi = round(b * scale)
 
     divisor = math.gcd(
-        abs(a_int),
-        abs(b_int)
+        abs(ai),
+        abs(bi)
     )
 
     if divisor == 0:
         return "0 : 0"
 
     return (
-        f"{a_int // divisor} : "
-        f"{b_int // divisor}"
+        f"{ai // divisor} : "
+        f"{bi // divisor}"
     )
 
 
 # =========================================================
-# EXTRACTION
+# NUMBER EXTRACTION
 # =========================================================
 
 def extract_percentage(text):
@@ -153,9 +160,13 @@ def extract_percentage(text):
 
         r"(\d+(?:\.\d+)?)\s*%",
 
-        r"normal\s+rate.*?(\d+(?:\.\d+)?)",
+        r"rate\s+of\s+return"
+        r".{0,30}?"
+        r"(\d+(?:\.\d+)?)",
 
-        r"rate\s+of\s+return.*?(\d+(?:\.\d+)?)"
+        r"normal\s+rate"
+        r".{0,30}?"
+        r"(\d+(?:\.\d+)?)"
 
     ]
 
@@ -168,7 +179,6 @@ def extract_percentage(text):
         )
 
         if match:
-
             return clean_number(
                 match.group(1)
             )
@@ -180,13 +190,18 @@ def extract_years_purchase(text):
 
     patterns = [
 
-        r"(\d+(?:\.\d+)?)\s*years?['’]?\s*purchase",
+        r"(\d+(?:\.\d+)?)\s*"
+        r"years?['’]?\s*purchase",
 
-        r"(\d+(?:\.\d+)?)\s*year['’]?\s*purchase",
+        r"(\d+(?:\.\d+)?)\s*"
+        r"year['’]?\s*purchase",
 
-        r"purchase\s*(?:of|=)?\s*(\d+(?:\.\d+)?)\s*years?",
+        r"purchase\s*(?:of|=)?\s*"
+        r"(\d+(?:\.\d+)?)\s*years?",
 
-        r"years?['’]?\s*purchase\s*(?:of|=)?\s*(\d+(?:\.\d+)?)"
+        r"years?['’]?\s*purchase"
+        r"\s*(?:of|=)?\s*"
+        r"(\d+(?:\.\d+)?)"
 
     ]
 
@@ -207,107 +222,18 @@ def extract_years_purchase(text):
     return None
 
 
-def extract_capital_employed(text):
-
-    pattern = (
-        r"capital\s+employed"
-        r".{0,30}?"
-        r"(?:₹\s*)?"
-        r"([\d,]+(?:\.\d+)?)"
-    )
-
-    match = re.search(
-        pattern,
-        text,
-        re.IGNORECASE
-    )
-
-    if match:
-
-        return clean_number(
-            match.group(1)
-        )
-
-    return None
-
-
-def extract_average_profit(text):
-
-    pattern = (
-        r"average\s+profits?"
-        r".{0,20}?"
-        r"(?:₹\s*)?"
-        r"([\d,]+(?:\.\d+)?)"
-    )
-
-    match = re.search(
-        pattern,
-        text,
-        re.IGNORECASE
-    )
-
-    if match:
-
-        return clean_number(
-            match.group(1)
-        )
-
-    return None
-
-
-def extract_historical_profits(text):
-
-    q = text.lower()
-
-    if not (
-        "profit" in q
-        and (
-            "last" in q
-            or "previous" in q
-            or "past" in q
-        )
-    ):
-        return []
-
-    match = re.search(
-        r"profits?.*?\b(?:were|are)\b"
-        r"(.*?)(?:\.|calculate|$)",
-        text,
-        re.IGNORECASE
-    )
-
-    if not match:
-        return []
-
-    section = match.group(1)
-
-    matches = re.findall(
-        r"(?:₹\s*)?"
-        r"(\d{1,3}(?:,\d{2,3})*(?:\.\d+)?|\d+(?:\.\d+)?)",
-        section
-    )
-
-    profits = []
-
-    for item in matches:
-
-        value = clean_number(item)
-
-        if value is not None and value >= 1000:
-            profits.append(value)
-
-    return profits
-
-
-def extract_labeled_number(text, labels):
+def extract_labeled_number(
+    text,
+    labels
+):
 
     for label in labels:
 
         pattern = (
             re.escape(label)
             + r"\s*"
-            r"(?:is|are|=|of)?\s*"
-            r"(?:₹\s*)?"
+            r"(?:is|are|=|of)?"
+            r"\s*(?:₹\s*)?"
             r"([\d,]+(?:\.\d+)?)"
         )
 
@@ -326,52 +252,95 @@ def extract_labeled_number(text, labels):
     return None
 
 
+def extract_capital_employed(text):
+
+    return extract_labeled_number(
+        text,
+        [
+            "capital employed",
+            "capital employed is",
+            "capital employed of"
+        ]
+    )
+
+
+def extract_average_profit(text):
+
+    return extract_labeled_number(
+        text,
+        [
+            "average profit",
+            "average profits"
+        ]
+    )
+
+
+# =========================================================
+# HISTORICAL PROFITS
+# =========================================================
+
+def extract_historical_profits(text):
+
+    q = text.lower()
+
+    if "profit" not in q:
+        return []
+
+    if not any(
+        word in q
+        for word in [
+            "last",
+            "previous",
+            "past",
+            "years"
+        ]
+    ):
+        return []
+
+    match = re.search(
+        r"profits?.*?"
+        r"(?:were|are|was|is)"
+        r"(.*?)(?:\.|calculate|$)",
+        text,
+        re.IGNORECASE
+    )
+
+    if not match:
+        return []
+
+    section = match.group(1)
+
+    numbers = re.findall(
+        r"(?:₹\s*)?"
+        r"(\d{1,3}(?:,\d{2,3})*"
+        r"(?:\.\d+)?|\d+(?:\.\d+)?)",
+        section
+    )
+
+    result = []
+
+    for number in numbers:
+
+        value = clean_number(number)
+
+        if value is not None and value >= 1000:
+
+            result.append(value)
+
+    return result
+
+
 # =========================================================
 # RATIO PARSER
 # =========================================================
 
-def extract_ratio(text, person):
+def extract_first_ratio(text):
 
-    q = text.lower()
-
-    # Examples:
-    # A:B = 3:2
-    # A and B are in ratio 3:2
-
-    patterns = [
-
-        rf"{person}\s*[:\-]?\s*"
-        rf"{'B' if person == 'A' else 'A'}"
-        rf"\s*(?:=|is|are|was|were|in)?\s*"
-        rf"(\d+)\s*:\s*(\d+)",
-
-        r"ratio\s*(?:of\s*)?"
-        r"(\d+)\s*:\s*(\d+)"
-
-    ]
-
-    for pattern in patterns:
-
-        match = re.search(
-            pattern,
-            text,
-            re.IGNORECASE
-        )
-
-        if match:
-
-            return (
-                float(match.group(1)),
-                float(match.group(2))
-            )
-
-    # Specific old ratio:
     match = re.search(
-        r"(?:old|existing|present).*?"
-        r"ratio.*?"
-        r"(\d+)\s*:\s*(\d+)",
-        text,
-        re.IGNORECASE
+        r"(\d+(?:\.\d+)?)"
+        r"\s*:\s*"
+        r"(\d+(?:\.\d+)?)",
+        text
     )
 
     if match:
@@ -384,26 +353,502 @@ def extract_ratio(text, person):
     return None
 
 
+def extract_partner_old_ratio(text):
+
+    match = re.search(
+        r"(?:ratio|sharing profits?)"
+        r".{0,50}?"
+        r"(\d+(?:\.\d+)?)"
+        r"\s*:\s*"
+        r"(\d+(?:\.\d+)?)",
+        text,
+        re.IGNORECASE
+    )
+
+    if match:
+
+        return (
+            float(match.group(1)),
+            float(match.group(2))
+        )
+
+    return extract_first_ratio(text)
+
+
+def extract_fraction_share(text):
+
+    patterns = [
+
+        r"(\d+(?:\.\d+)?)\s*/\s*"
+        r"(\d+(?:\.\d+)?)\s*share",
+
+        r"for\s+"
+        r"(\d+(?:\.\d+)?)\s*/\s*"
+        r"(\d+(?:\.\d+)?)"
+        r"\s*share",
+
+        r"(\d+(?:\.\d+)?)\s*/\s*"
+        r"(\d+(?:\.\d+)?)"
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+
+            numerator = float(
+                match.group(1)
+            )
+
+            denominator = float(
+                match.group(2)
+            )
+
+            if denominator != 0:
+
+                return (
+                    numerator,
+                    denominator
+                )
+
+    return None
+
+
+# =========================================================
+# SAFE BASIC MATH
+# =========================================================
+
+_ALLOWED_OPERATORS = {
+
+    ast.Add: op.add,
+    ast.Sub: op.sub,
+    ast.Mult: op.mul,
+    ast.Div: op.truediv,
+    ast.Pow: op.pow,
+    ast.USub: op.neg,
+    ast.UAdd: op.pos
+
+}
+
+
+def safe_math(node):
+
+    if isinstance(
+        node,
+        ast.Constant
+    ):
+
+        if isinstance(
+            node.value,
+            (int, float)
+        ):
+            return node.value
+
+        raise ValueError()
+
+    if isinstance(
+        node,
+        ast.UnaryOp
+    ):
+
+        operator = _ALLOWED_OPERATORS.get(
+            type(node.op)
+        )
+
+        if operator is None:
+            raise ValueError()
+
+        return operator(
+            safe_math(node.operand)
+        )
+
+    if isinstance(
+        node,
+        ast.BinOp
+    ):
+
+        operator = _ALLOWED_OPERATORS.get(
+            type(node.op)
+        )
+
+        if operator is None:
+            raise ValueError()
+
+        left = safe_math(
+            node.left
+        )
+
+        right = safe_math(
+            node.right
+        )
+
+        return operator(
+            left,
+            right
+        )
+
+    raise ValueError()
+
+
+def solve_basic_math(question):
+
+    q = question.strip()
+
+    # Convert common symbols
+    q = q.replace("×", "*")
+    q = q.replace("x", "*")
+    q = q.replace("X", "*")
+    q = q.replace("÷", "/")
+    q = q.replace("−", "-")
+    q = q.replace("–", "-")
+
+    # Remove common words around simple arithmetic
+    q = re.sub(
+        r"^(calculate|solve|find)\s+",
+        "",
+        q,
+        flags=re.IGNORECASE
+    )
+
+    q = q.strip()
+
+    # Only allow a simple arithmetic expression
+    if not re.fullmatch(
+        r"[\d\s\+\-\*\/\(\)\.\^]+",
+        q
+    ):
+        return None
+
+    if not re.search(
+        r"[\+\-\*\/]",
+        q
+    ):
+        return None
+
+    try:
+
+        q = q.replace("^", "**")
+
+        tree = ast.parse(
+            q,
+            mode="eval"
+        )
+
+        result = safe_math(
+            tree.body
+        )
+
+        return result
+
+    except Exception:
+
+        return None
+
+
 # =========================================================
 # LOCAL SOLVER
 # =========================================================
 
 def local_solve(question):
 
-    q = question.lower()
+    q = question.lower().strip()
 
 
     # =====================================================
-    # 1. HISTORICAL PROFITS + SUPER PROFIT GOODWILL
+    # 0. BASIC MATH
+    # =====================================================
+
+    basic_result = solve_basic_math(
+        question
+    )
+
+    if basic_result is not None:
+
+        return {
+            "success": True,
+            "title": "Basic Calculation",
+            "value": basic_result,
+            "steps": [
+                f"{question.strip()} = "
+                f"{format_decimal(basic_result)}"
+            ]
+        }
+
+
+    # =====================================================
+    # 1. ADMISSION OF PARTNER
+    # =====================================================
+
+    if (
+        "admitted" in q
+        or "admission of" in q
+        or "new partner" in q
+    ):
+
+        old_ratio = extract_partner_old_ratio(
+            question
+        )
+
+        new_share = extract_fraction_share(
+            question
+        )
+
+        if (
+            old_ratio is not None
+            and new_share is not None
+        ):
+
+            old_a, old_b = old_ratio
+
+            numerator, denominator = new_share
+
+            c_share = (
+                numerator / denominator
+            )
+
+            remaining_share = (
+                1 - c_share
+            )
+
+            total_old = (
+                old_a + old_b
+            )
+
+            new_a = (
+                remaining_share
+                * old_a
+                / total_old
+            )
+
+            new_b = (
+                remaining_share
+                * old_b
+                / total_old
+            )
+
+            sacrifice_a = (
+                old_a / total_old
+                - new_a
+            )
+
+            sacrifice_b = (
+                old_b / total_old
+                - new_b
+            )
+
+            steps = [
+
+                "Given:",
+
+                "Old Ratio = "
+                + format_decimal(old_a)
+                + " : "
+                + format_decimal(old_b),
+
+                "New Partner's Share = "
+                + format_decimal(numerator)
+                + "/"
+                + format_decimal(denominator),
+
+                "",
+
+                "Remaining Share for Old Partners = "
+                + "1 − "
+                + format_decimal(c_share),
+
+                "Remaining Share = "
+                + format_decimal(
+                    remaining_share
+                ),
+
+                "",
+
+                "New Share of A = "
+                + format_decimal(
+                    remaining_share
+                )
+                + " × "
+                + format_decimal(old_a)
+                + "/"
+                + format_decimal(total_old),
+
+                "New Share of A = "
+                + format_decimal(new_a),
+
+                "",
+
+                "New Share of B = "
+                + format_decimal(
+                    remaining_share
+                )
+                + " × "
+                + format_decimal(old_b)
+                + "/"
+                + format_decimal(total_old),
+
+                "New Share of B = "
+                + format_decimal(new_b),
+
+                "",
+
+                "Sacrifice of A = Old Share − New Share",
+
+                "Sacrifice of A = "
+                + format_decimal(
+                    old_a / total_old
+                )
+                + " − "
+                + format_decimal(new_a),
+
+                "Sacrifice of A = "
+                + format_decimal(
+                    sacrifice_a
+                ),
+
+                "",
+
+                "Sacrifice of B = Old Share − New Share",
+
+                "Sacrifice of B = "
+                + format_decimal(
+                    old_b / total_old
+                )
+                + " − "
+                + format_decimal(new_b),
+
+                "Sacrifice of B = "
+                + format_decimal(
+                    sacrifice_b
+                ),
+
+                "",
+
+                "New Ratio = "
+                + format_decimal(new_a)
+                + " : "
+                + format_decimal(new_b)
+                + " : "
+                + format_decimal(c_share),
+
+                "Sacrificing Ratio = "
+                + simplify_ratio(
+                    sacrifice_a,
+                    sacrifice_b
+                )
+            ]
+
+
+            # Goodwill premium
+            goodwill = extract_labeled_number(
+                question,
+                [
+                    "goodwill premium",
+                    "premium for goodwill",
+                    "goodwill"
+                ]
+            )
+
+            if goodwill is not None:
+
+                amount_a = (
+                    goodwill
+                    * sacrifice_a
+                    / (
+                        sacrifice_a
+                        + sacrifice_b
+                    )
+                )
+
+                amount_b = (
+                    goodwill
+                    * sacrifice_b
+                    / (
+                        sacrifice_a
+                        + sacrifice_b
+                    )
+                )
+
+                steps.extend([
+
+                    "",
+
+                    "Goodwill Premium = ₹"
+                    + format_number(
+                        goodwill
+                    ),
+
+                    "A's Share of Goodwill = ₹"
+                    + format_number(
+                        amount_a
+                    ),
+
+                    "B's Share of Goodwill = ₹"
+                    + format_number(
+                        amount_b
+                    ),
+
+                    "",
+
+                    "Journal Entry:",
+
+                    "Bank A/c Dr. ₹"
+                    + format_number(
+                        goodwill
+                    ),
+
+                    "    To Premium for Goodwill A/c ₹"
+                    + format_number(
+                        goodwill
+                    ),
+
+                    "",
+
+                    "Premium for Goodwill A/c Dr. ₹"
+                    + format_number(
+                        goodwill
+                    ),
+
+                    "    To A's Capital A/c ₹"
+                    + format_number(
+                        amount_a
+                    ),
+
+                    "    To B's Capital A/c ₹"
+                    + format_number(
+                        amount_b
+                    )
+
+                ])
+
+
+            return {
+                "success": True,
+                "title":
+                    "Admission of Partner",
+                "value": None,
+                "steps": steps
+            }
+
+
+    # =====================================================
+    # 2. HISTORICAL PROFITS GOODWILL
     # =====================================================
 
     if (
         "goodwill" in q
         and "profit" in q
-        and (
-            "last" in q
-            or "previous" in q
-            or "past" in q
+        and any(
+            word in q
+            for word in [
+                "last",
+                "previous",
+                "past"
+            ]
         )
     ):
 
@@ -437,46 +882,32 @@ def local_solve(question):
             )
 
             normal = (
-                capital * rate / 100
+                capital
+                * rate
+                / 100
             )
 
             super_profit = (
-                average - normal
+                average
+                - normal
             )
 
             goodwill = (
-                super_profit * years
+                super_profit
+                * years
             )
 
             return {
+
                 "success": True,
+
                 "title":
                     "Goodwill - Super Profit Method",
+
                 "value":
                     goodwill,
+
                 "steps": [
-
-                    "Given:",
-
-                    "Capital Employed = ₹"
-                    + format_number(capital),
-
-                    "Normal Rate of Return = "
-                    + format_number(rate)
-                    + "%",
-
-                    "Profits = "
-                    + ", ".join(
-                        "₹" + format_number(x)
-                        for x in profits
-                    ),
-
-                    "Years' Purchase = "
-                    + format_number(years),
-
-                    "",
-
-                    "Step 1: Total Profit",
 
                     "Total Profit = "
                     + " + ".join(
@@ -489,71 +920,59 @@ def local_solve(question):
 
                     "",
 
-                    "Step 2: Average Profit",
-
                     "Average Profit = "
                     "Total Profit ÷ Number of Years",
 
                     "Average Profit = ₹"
-                    + format_number(total)
-                    + " ÷ "
-                    + str(len(profits)),
-
-                    "Average Profit = ₹"
-                    + format_number(average),
+                    + format_number(
+                        average
+                    ),
 
                     "",
-
-                    "Step 3: Normal Profit",
 
                     "Normal Profit = "
                     "Capital Employed × Rate ÷ 100",
 
                     "Normal Profit = ₹"
-                    + format_number(capital)
-                    + " × "
-                    + format_number(rate)
-                    + " ÷ 100",
-
-                    "Normal Profit = ₹"
-                    + format_number(normal),
+                    + format_number(
+                        normal
+                    ),
 
                     "",
-
-                    "Step 4: Super Profit",
 
                     "Super Profit = "
                     "Average Profit − Normal Profit",
 
                     "Super Profit = ₹"
-                    + format_number(average)
-                    + " − ₹"
-                    + format_number(normal),
-
-                    "Super Profit = ₹"
-                    + format_number(super_profit),
+                    + format_number(
+                        super_profit
+                    ),
 
                     "",
-
-                    "Step 5: Goodwill",
 
                     "Goodwill = "
                     "Super Profit × Years' Purchase",
 
                     "Goodwill = ₹"
-                    + format_number(super_profit)
+                    + format_number(
+                        super_profit
+                    )
                     + " × "
-                    + format_number(years),
+                    + format_decimal(
+                        years
+                    ),
 
                     "Goodwill = ₹"
-                    + format_number(goodwill)
+                    + format_number(
+                        goodwill
+                    )
 
                 ]
             }
 
 
     # =====================================================
-    # 2. GOODWILL - AVERAGE PROFIT
+    # 3. AVERAGE PROFIT GOODWILL
     # =====================================================
 
     if (
@@ -589,7 +1008,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 3. SUPER PROFIT
+    # 4. SUPER PROFIT
     # =====================================================
 
     if "super profit" in q:
@@ -658,7 +1077,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 4. CURRENT RATIO
+    # 5. CURRENT RATIO
     # =====================================================
 
     if "current ratio" in q:
@@ -666,16 +1085,14 @@ def local_solve(question):
         assets = extract_labeled_number(
             question,
             [
-                "current assets",
-                "current asset"
+                "current assets"
             ]
         )
 
         liabilities = extract_labeled_number(
             question,
             [
-                "current liabilities",
-                "current liability"
+                "current liabilities"
             ]
         )
 
@@ -699,7 +1116,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 5. QUICK RATIO
+    # 6. QUICK RATIO
     # =====================================================
 
     if (
@@ -707,24 +1124,23 @@ def local_solve(question):
         or "liquid ratio" in q
     ):
 
-        quick_assets = extract_labeled_number(
+        assets = extract_labeled_number(
             question,
             [
                 "quick assets",
-                "quick asset"
+                "liquid assets"
             ]
         )
 
         liabilities = extract_labeled_number(
             question,
             [
-                "current liabilities",
-                "current liability"
+                "current liabilities"
             ]
         )
 
         if (
-            quick_assets is not None
+            assets is not None
             and liabilities is not None
         ):
 
@@ -734,7 +1150,7 @@ def local_solve(question):
                     "quick_ratio",
 
                 "quick_assets":
-                    quick_assets,
+                    assets,
 
                 "current_liabilities":
                     liabilities
@@ -743,10 +1159,13 @@ def local_solve(question):
 
 
     # =====================================================
-    # 6. DEBT EQUITY RATIO
+    # 7. DEBT-EQUITY RATIO
     # =====================================================
 
-    if "debt-equity ratio" in q or "debt equity ratio" in q:
+    if (
+        "debt-equity ratio" in q
+        or "debt equity ratio" in q
+    ):
 
         debt = extract_labeled_number(
             question,
@@ -760,8 +1179,7 @@ def local_solve(question):
             question,
             [
                 "shareholders' funds",
-                "shareholders funds",
-                "shareholder funds"
+                "shareholders funds"
             ]
         )
 
@@ -785,7 +1203,165 @@ def local_solve(question):
 
 
     # =====================================================
-    # 7. GROSS PROFIT RATIO
+    # 8. DEBT RATIO
+    # =====================================================
+
+    if (
+        "debt ratio" in q
+        or "debt to total assets" in q
+    ):
+
+        debt = extract_labeled_number(
+            question,
+            [
+                "total debt",
+                "debt"
+            ]
+        )
+
+        assets = extract_labeled_number(
+            question,
+            [
+                "total assets",
+                "assets"
+            ]
+        )
+
+        if (
+            debt is not None
+            and assets is not None
+            and assets != 0
+        ):
+
+            ratio = (
+                debt
+                / assets
+                * 100
+            )
+
+            return {
+
+                "success": True,
+
+                "title":
+                    "Debt Ratio",
+
+                "value":
+                    ratio,
+
+                "steps": [
+
+                    "Debt Ratio = "
+                    "Total Debt ÷ Total Assets × 100",
+
+                    "Debt Ratio = ₹"
+                    + format_number(debt)
+                    + " ÷ ₹"
+                    + format_number(assets)
+                    + " × 100",
+
+                    "Debt Ratio = "
+                    + format_decimal(ratio)
+                    + "%"
+
+                ]
+            }
+
+
+    # =====================================================
+    # 9. PROPRIETARY RATIO
+    # =====================================================
+
+    if (
+        "proprietary ratio" in q
+    ):
+
+        assets = extract_labeled_number(
+            question,
+            [
+                "total assets",
+                "assets"
+            ]
+        )
+
+        debt = extract_labeled_number(
+            question,
+            [
+                "total debt",
+                "debt"
+            ]
+        )
+
+        reserves = extract_labeled_number(
+            question,
+            [
+                "reserve",
+                "reserves"
+            ]
+        )
+
+        surplus = extract_labeled_number(
+            question,
+            [
+                "surplus"
+            ]
+        )
+
+        if (
+            assets is not None
+            and debt is not None
+        ):
+
+            shareholders_funds = (
+                assets - debt
+            )
+
+            if assets != 0:
+
+                ratio = (
+                    shareholders_funds
+                    / assets
+                )
+
+                steps = [
+
+                    "Shareholders' Funds = "
+                    "Total Assets − Total Debt",
+
+                    "Shareholders' Funds = ₹"
+                    + format_number(
+                        shareholders_funds
+                    ),
+
+                    "",
+
+                    "Proprietary Ratio = "
+                    "Shareholders' Funds ÷ Total Assets",
+
+                    "Proprietary Ratio = "
+                    + format_decimal(ratio)
+                    + " : 1"
+
+                ]
+
+                return {
+
+                    "success": True,
+
+                    "title":
+                        "Proprietary Ratio",
+
+                    "value":
+                        ratio,
+
+                    "steps":
+                        steps
+
+                }
+
+
+    # =====================================================
+    # 10. GROSS PROFIT RATIO
     # =====================================================
 
     if "gross profit ratio" in q:
@@ -825,7 +1401,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 8. NET PROFIT RATIO
+    # 11. NET PROFIT RATIO
     # =====================================================
 
     if "net profit ratio" in q:
@@ -865,7 +1441,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 9. ROI
+    # 12. ROI
     # =====================================================
 
     if (
@@ -904,18 +1480,15 @@ def local_solve(question):
 
 
     # =====================================================
-    # 10. INTEREST ON CAPITAL
+    # 13. INTEREST ON CAPITAL
     # =====================================================
 
-    if (
-        "interest on capital" in q
-    ):
+    if "interest on capital" in q:
 
         capital = extract_labeled_number(
             question,
             [
-                "capital",
-                "capital account"
+                "capital"
             ]
         )
 
@@ -943,12 +1516,10 @@ def local_solve(question):
 
 
     # =====================================================
-    # 11. INTEREST ON DRAWINGS
+    # 14. INTEREST ON DRAWINGS
     # =====================================================
 
-    if (
-        "interest on drawings" in q
-    ):
+    if "interest on drawings" in q:
 
         drawings = extract_labeled_number(
             question,
@@ -982,7 +1553,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 12. CONTRIBUTION
+    # 15. CONTRIBUTION
     # =====================================================
 
     if "contribution" in q:
@@ -1022,7 +1593,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 13. P/V RATIO
+    # 16. P/V RATIO
     # =====================================================
 
     if (
@@ -1064,7 +1635,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 14. BREAK EVEN POINT
+    # 17. BREAK EVEN
     # =====================================================
 
     if (
@@ -1080,25 +1651,22 @@ def local_solve(question):
             ]
         )
 
-        pv_match = re.search(
+        match = re.search(
             r"(?:p/v|p-v|profit volume)"
-            r".{0,15}?"
+            r".{0,20}?"
             r"(\d+(?:\.\d+)?)\s*%",
             question,
             re.IGNORECASE
         )
 
-        pv_ratio = None
-
-        if pv_match:
-            pv_ratio = clean_number(
-                pv_match.group(1)
-            )
-
         if (
             fixed_cost is not None
-            and pv_ratio is not None
+            and match
         ):
+
+            pv_ratio = clean_number(
+                match.group(1)
+            )
 
             return calculate({
 
@@ -1115,7 +1683,7 @@ def local_solve(question):
 
 
     # =====================================================
-    # 15. DEPRECIATION SLM
+    # 18. DEPRECIATION - SLM
     # =====================================================
 
     if (
@@ -1147,7 +1715,10 @@ def local_solve(question):
             ]
         )
 
-        if cost is not None and life is not None:
+        if (
+            cost is not None
+            and life is not None
+        ):
 
             return calculate({
 
@@ -1167,132 +1738,14 @@ def local_solve(question):
 
 
     # =====================================================
-    # 16. MPC
-    # =====================================================
-
-    if "mpc" in q:
-
-        dc = extract_labeled_number(
-            question,
-            [
-                "change in consumption",
-                "change in consumption (dc)"
-            ]
-        )
-
-        dy = extract_labeled_number(
-            question,
-            [
-                "change in income",
-                "change in income (dy)"
-            ]
-        )
-
-        if dc is not None and dy is not None:
-
-            return calculate({
-
-                "type":
-                    "mpc",
-
-                "change_consumption":
-                    dc,
-
-                "change_income":
-                    dy
-
-            })
-
-
-    # =====================================================
-    # 17. MPS
-    # =====================================================
-
-    if re.search(
-        r"\bmps\b",
-        q
-    ):
-
-        ds = extract_labeled_number(
-            question,
-            [
-                "change in saving",
-                "change in savings"
-            ]
-        )
-
-        dy = extract_labeled_number(
-            question,
-            [
-                "change in income"
-            ]
-        )
-
-        if ds is not None and dy is not None:
-
-            return calculate({
-
-                "type":
-                    "mps",
-
-                "change_saving":
-                    ds,
-
-                "change_income":
-                    dy
-
-            })
-
-
-    # =====================================================
-    # 18. MULTIPLIER
-    # =====================================================
-
-    if (
-        "multiplier" in q
-        and "money multiplier" not in q
-    ):
-
-        mpc_match = re.search(
-            r"mpc.{0,15}?"
-            r"(\d+(?:\.\d+)?)",
-            question,
-            re.IGNORECASE
-        )
-
-        if mpc_match:
-
-            mpc = clean_number(
-                mpc_match.group(1)
-            )
-
-            if mpc is not None:
-
-                # If written as 0.8, use directly.
-                # If written as 80%, convert.
-                if mpc > 1:
-                    mpc = mpc / 100
-
-                return calculate({
-
-                    "type":
-                        "multiplier",
-
-                    "mpc":
-                        mpc
-
-                })
-
-
-    # =====================================================
-    # NO LOCAL SOLUTION
+    # NOTHING LOCAL
     # =====================================================
 
     return None
 
 
 # =========================================================
-# FORMAT LOCAL RESULT
+# FORMAT RESULT
 # =========================================================
 
 def format_result(result):
@@ -1338,6 +1791,7 @@ def format_result(result):
         ""
     ).lower()
 
+    # Ratio values
     if (
         value is not None
         and isinstance(
@@ -1346,38 +1800,66 @@ def format_result(result):
         )
     ):
 
-        lines.append("")
+        if (
+            "ratio" in title
+            and "debt ratio" not in title
+            and "gross profit ratio" not in title
+            and "net profit ratio" not in title
+        ):
 
-        if "ratio" in title:
+            lines.append("")
 
             lines.append(
                 "✅ Final Answer: "
-                + format_ratio(value)
+                + format_decimal(value)
                 + " : 1"
             )
 
         elif (
-            "mpc" in title
-            or "mps" in title
-            or "multiplier" in title
+            "ratio" in title
+            or "%" in "\n".join(
+                result.get(
+                    "steps",
+                    []
+                )
+            )
         ):
 
-            lines.append(
-                "✅ Final Answer: "
-                + format_ratio(value)
+            # Avoid duplicate % if already shown
+            last_steps = "\n".join(
+                result.get(
+                    "steps",
+                    []
+                )
             )
 
-        elif "%" in "\n".join(
-            result.get("steps", [])
+            if (
+                "Final Answer" not in last_steps
+            ):
+
+                lines.append("")
+
+                lines.append(
+                    "✅ Final Answer: "
+                    + format_decimal(value)
+                    + "%"
+                )
+
+        elif (
+            "basic calculation"
+            in title
         ):
+
+            lines.append("")
 
             lines.append(
                 "✅ Final Answer: "
-                + format_number(value)
-                + "%"
+                + format_decimal(value)
             )
 
         else:
+
+            lines.append("")
 
             lines.append(
                 "✅ Final Answer: ₹"
@@ -1411,27 +1893,28 @@ def solve_with_ai(
         api_key=api_key
     )
 
-    context = ""
+    database_context = ""
 
     if pattern:
 
-        context = """
+        database_context = """
 
-Relevant database pattern:
-
-ID:
-""" + str(
-            pattern.get("id", "")
-        ) + """
+DATABASE PATTERN:
 
 Chapter:
 """ + str(
-            pattern.get("chapter", "")
+            pattern.get(
+                "chapter",
+                ""
+            )
         ) + """
 
 Formula:
 """ + str(
-            pattern.get("formula", "")
+            pattern.get(
+                "formula",
+                ""
+            )
         ) + """
 
 Method:
@@ -1446,41 +1929,60 @@ Method:
     prompt = """
 You are Commerce AI.
 
-Solve only academic Commerce questions,
-especially Accountancy and Economics.
+Solve the student's Accountancy or Economics
+question accurately.
 
-Give:
-1. Given information
+Follow this format:
+
+1. Given
 2. Required
-3. Formula/rule
-4. Step-by-step calculation
-5. Final answer
+3. Formula / Rule
+4. Calculation
+5. Final Answer
 
-Do not invent missing information.
+For Accountancy:
+- show proper journal entries when asked
+- show ratios clearly
+- show working notes
+- use ₹ correctly
+- do not skip important calculations
 
-""" + context + """
+For Economics:
+- explain the formula
+- calculate step by step
+- clearly state the final result
 
-Question:
+Never invent information that is not given.
+
+""" + database_context + """
+
+QUESTION:
 
 """ + question
 
 
     content = [
+
         {
             "type":
                 "input_text",
+
             "text":
                 prompt
         }
+
     ]
 
     if image:
 
         content.append({
+
             "type":
                 "input_image",
+
             "image_url":
                 image
+
         })
 
 
@@ -1489,12 +1991,15 @@ Question:
         model="gpt-5.6-luna",
 
         input=[
+
             {
                 "role":
                     "user",
+
                 "content":
                     content
             }
+
         ]
     )
 
@@ -1513,7 +2018,7 @@ class handler(
 
         try:
 
-            length = int(
+            content_length = int(
                 self.headers.get(
                     "Content-Length",
                     0
@@ -1521,7 +2026,7 @@ class handler(
             )
 
             body = self.rfile.read(
-                length
+                content_length
             )
 
             data = json.loads(
@@ -1540,7 +2045,7 @@ class handler(
 
 
             # =============================================
-            # EMPTY INPUT
+            # EMPTY QUESTION
             # =============================================
 
             if (
@@ -1558,6 +2063,7 @@ class handler(
                 self.end_headers()
 
                 self.wfile.write(
+
                     json.dumps(
                         {
                             "success": False,
@@ -1566,18 +2072,19 @@ class handler(
                         },
                         ensure_ascii=False
                     ).encode("utf-8")
+
                 )
 
                 return
 
 
             # =============================================
-            # LOCAL ENGINE FIRST
+            # LOCAL SOLVER
             # =============================================
 
             local_result = None
 
-            if question and not image:
+            if question:
 
                 local_result = local_solve(
                     question
@@ -1585,7 +2092,7 @@ class handler(
 
 
             # =============================================
-            # LOCAL ANSWER
+            # LOCAL SUCCESS
             # =============================================
 
             if (
@@ -1609,24 +2116,26 @@ class handler(
                 self.end_headers()
 
                 self.wfile.write(
+
                     json.dumps(
                         {
                             "success": True,
                             "answer": answer,
                             "source":
-                                "local_database",
+                                "local_engine",
                             "api_used":
                                 False
                         },
                         ensure_ascii=False
                     ).encode("utf-8")
+
                 )
 
                 return
 
 
             # =============================================
-            # DATABASE PATTERN
+            # DATABASE
             # =============================================
 
             pattern = find_pattern(
@@ -1655,12 +2164,15 @@ class handler(
             self.end_headers()
 
             self.wfile.write(
+
                 json.dumps(
                     {
                         "success": True,
                         "answer": answer,
-                        "source": "ai",
-                        "api_used": True,
+                        "source":
+                            "ai",
+                        "api_used":
+                            True,
                         "pattern":
                             (
                                 pattern.get("id")
@@ -1670,6 +2182,7 @@ class handler(
                     },
                     ensure_ascii=False
                 ).encode("utf-8")
+
             )
 
 
@@ -1685,11 +2198,14 @@ class handler(
             self.end_headers()
 
             self.wfile.write(
+
                 json.dumps(
                     {
                         "success": False,
-                        "error": str(e)
+                        "error":
+                            str(e)
                     },
                     ensure_ascii=False
                 ).encode("utf-8")
-        )
+
+    )
