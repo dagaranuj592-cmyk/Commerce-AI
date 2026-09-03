@@ -106,18 +106,25 @@ def clean_number(value):
         return None
 
 
+
 def format_number(value):
 
     if value is None:
         return "0"
 
-    if isinstance(value, float):
+    try:
+        value = float(value)
 
-        if value.is_integer():
-            value = int(value)
+        # Remove floating-point calculation errors
+        if abs(value - round(value)) < 0.000001:
+            value = int(round(value))
+        else:
+            value = round(value, 2)
 
-    return f"{value:,}"
+        return f"{value:,}"
 
+    except Exception:
+        return str(value)
 
 def format_decimal(value):
 
