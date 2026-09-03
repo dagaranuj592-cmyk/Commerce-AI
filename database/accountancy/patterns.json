@@ -1,0 +1,1273 @@
+{
+  "subject": "Accountancy",
+  "database_version": "1.0",
+  "purpose": "Question pattern recognition and solution planning",
+
+  "patterns": [
+
+    {
+      "id": "goodwill_average_profit",
+      "chapter": "Goodwill",
+      "keywords": [
+        "goodwill",
+        "average profit",
+        "years purchase",
+        "average profit method"
+      ],
+      "required_data": [
+        "average_profit",
+        "years_purchase"
+      ],
+      "method": [
+        "Find Average Profit",
+        "Goodwill = Average Profit × Years' Purchase"
+      ],
+      "formula": "Goodwill = Average Profit × Years' Purchase"
+    },
+
+    {
+      "id": "goodwill_historical_profits",
+      "chapter": "Goodwill",
+      "keywords": [
+        "goodwill",
+        "profits for last years",
+        "profits of last years",
+        "profits for previous years",
+        "profits of previous years"
+      ],
+      "required_data": [
+        "historical_profits",
+        "years_purchase"
+      ],
+      "method": [
+        "Add all given profits",
+        "Calculate Average Profit",
+        "Goodwill = Average Profit × Years' Purchase"
+      ],
+      "formula": "Average Profit = Total Profit ÷ Number of Years; Goodwill = Average Profit × Years' Purchase"
+    },
+
+    {
+      "id": "goodwill_super_profit",
+      "chapter": "Goodwill",
+      "keywords": [
+        "goodwill",
+        "super profit",
+        "normal rate",
+        "capital employed",
+        "years purchase"
+      ],
+      "required_data": [
+        "average_profit",
+        "capital_employed",
+        "normal_rate",
+        "years_purchase"
+      ],
+      "method": [
+        "Calculate Normal Profit",
+        "Calculate Super Profit",
+        "Calculate Goodwill"
+      ],
+      "formula": "Normal Profit = Capital Employed × Normal Rate / 100; Super Profit = Average Profit − Normal Profit; Goodwill = Super Profit × Years' Purchase"
+    },
+
+    {
+      "id": "super_profit_only",
+      "chapter": "Goodwill",
+      "keywords": [
+        "super profit",
+        "normal profit",
+        "capital employed",
+        "normal rate"
+      ],
+      "required_data": [
+        "average_profit",
+        "capital_employed",
+        "normal_rate"
+      ],
+      "method": [
+        "Normal Profit = Capital Employed × Normal Rate / 100",
+        "Super Profit = Average Profit − Normal Profit"
+      ],
+      "formula": "Super Profit = Average Profit − Normal Profit"
+    },
+
+    {
+      "id": "goodwill_capitalisation_average",
+      "chapter": "Goodwill",
+      "keywords": [
+        "capitalisation",
+        "capitalized value",
+        "average profit",
+        "goodwill"
+      ],
+      "required_data": [
+        "average_profit",
+        "normal_rate",
+        "actual_capital_employed"
+      ],
+      "method": [
+        "Calculate Capitalised Value",
+        "Subtract Actual Capital Employed",
+        "Obtain Goodwill"
+      ],
+      "formula": "Capitalised Value = Average Profit × 100 / Normal Rate; Goodwill = Capitalised Value − Actual Capital Employed"
+    },
+
+    {
+      "id": "goodwill_capitalisation_super_profit",
+      "chapter": "Goodwill",
+      "keywords": [
+        "capitalisation",
+        "super profit",
+        "goodwill"
+      ],
+      "required_data": [
+        "super_profit",
+        "normal_rate"
+      ],
+      "method": [
+        "Calculate Goodwill directly from Super Profit"
+      ],
+      "formula": "Goodwill = Super Profit × 100 / Normal Rate"
+    },
+
+    {
+      "id": "hidden_goodwill",
+      "chapter": "Goodwill",
+      "keywords": [
+        "hidden goodwill",
+        "capital brought",
+        "new partner",
+        "share of goodwill"
+      ],
+      "required_data": [
+        "capital_brought",
+        "new_partner_share"
+      ],
+      "method": [
+        "Calculate implied total capital",
+        "Calculate implied goodwill"
+      ],
+      "formula": "Total Capital = Capital Brought × Total Ratio / New Partner's Share; Hidden Goodwill = Implied Total Capital − Actual Total Capital"
+    },
+
+    {
+      "id": "new_profit_sharing_ratio",
+      "chapter": "Change in Profit Sharing Ratio",
+      "keywords": [
+        "new ratio",
+        "new profit sharing ratio",
+        "change in ratio"
+      ],
+      "required_data": [
+        "old_ratio",
+        "change_in_share"
+      ],
+      "method": [
+        "Adjust old ratio according to gain or sacrifice",
+        "Calculate new ratio"
+      ],
+      "formula": "New Share = Old Share ± Change in Share"
+    },
+
+    {
+      "id": "sacrificing_ratio",
+      "chapter": "Admission of Partner",
+      "keywords": [
+        "sacrificing ratio",
+        "sacrifice",
+        "admission"
+      ],
+      "required_data": [
+        "old_ratio",
+        "new_ratio"
+      ],
+      "method": [
+        "Compare old and new shares",
+        "Sacrifice = Old Share − New Share"
+      ],
+      "formula": "Sacrificing Ratio = Old Ratio − New Ratio"
+    },
+
+    {
+      "id": "gaining_ratio",
+      "chapter": "Retirement of Partner",
+      "keywords": [
+        "gaining ratio",
+        "gain",
+        "retirement"
+      ],
+      "required_data": [
+        "old_ratio",
+        "new_ratio"
+      ],
+      "method": [
+        "Compare new and old shares",
+        "Gain = New Share − Old Share"
+      ],
+      "formula": "Gaining Ratio = New Ratio − Old Ratio"
+    },
+
+    {
+      "id": "interest_on_capital",
+      "chapter": "Partnership Fundamentals",
+      "keywords": [
+        "interest on capital",
+        "ioc",
+        "interest allowed on capital"
+      ],
+      "required_data": [
+        "capital",
+        "rate",
+        "time"
+      ],
+      "method": [
+        "Apply interest formula"
+      ],
+      "formula": "Interest on Capital = Capital × Rate × Time / 100"
+    },
+
+    {
+      "id": "interest_on_drawings",
+      "chapter": "Partnership Fundamentals",
+      "keywords": [
+        "interest on drawings",
+        "iod",
+        "drawings"
+      ],
+      "required_data": [
+        "drawings",
+        "rate",
+        "time"
+      ],
+      "method": [
+        "Determine amount and period of drawings",
+        "Apply interest formula"
+      ],
+      "formula": "Interest on Drawings = Drawings × Rate × Time / 100"
+    },
+
+    {
+      "id": "partner_salary",
+      "chapter": "Partnership Fundamentals",
+      "keywords": [
+        "partner salary",
+        "salary to partner",
+        "partner remuneration"
+      ],
+      "required_data": [
+        "salary_amount"
+      ],
+      "method": [
+        "Treat salary according to partnership agreement",
+        "Record through Profit and Loss Appropriation Account"
+      ],
+      "formula": "Partner Salary = Amount specified in Partnership Agreement"
+    },
+
+    {
+      "id": "partner_commission_on_profit",
+      "chapter": "Partnership Fundamentals",
+      "keywords": [
+        "partner commission",
+        "commission on profit",
+        "commission to partner"
+      ],
+      "required_data": [
+        "profit",
+        "commission_rate"
+      ],
+      "method": [
+        "Identify whether commission is before or after commission",
+        "Apply the appropriate formula"
+      ],
+      "formula": "Before Commission: Commission = Profit × Rate / 100; After Commission: Commission = Profit × Rate / (100 + Rate)"
+    },
+
+    {
+      "id": "guarantee_of_profit",
+      "chapter": "Partnership Fundamentals",
+      "keywords": [
+        "guarantee of profit",
+        "guaranteed profit",
+        "minimum profit"
+      ],
+      "required_data": [
+        "guaranteed_amount",
+        "actual_share"
+      ],
+      "method": [
+        "Calculate partner's actual share",
+        "Compare actual share with guaranteed amount",
+        "Calculate deficiency if any"
+      ],
+      "formula": "Deficiency = Guaranteed Profit − Actual Profit Share"
+    },
+
+    {
+      "id": "past_adjustment",
+      "chapter": "Partnership Fundamentals",
+      "keywords": [
+        "past adjustment",
+        "omitted",
+        "wrongly credited",
+        "wrongly debited"
+      ],
+      "required_data": [
+        "correct_amounts",
+        "amounts_already_recorded"
+      ],
+      "method": [
+        "Calculate correct entitlement",
+        "Calculate amount already received",
+        "Pass adjustment for difference"
+      ],
+      "formula": "Adjustment = Correct Amount − Amount Already Recorded"
+    },
+
+    {
+      "id": "pnl_appropriation",
+      "chapter": "Partnership Fundamentals",
+      "keywords": [
+        "profit and loss appropriation",
+        "appropriation account",
+        "profit distribution"
+      ],
+      "required_data": [
+        "net_profit",
+        "interest_on_capital",
+        "salary",
+        "commission",
+        "interest_on_drawings"
+      ],
+      "method": [
+        "Start with Net Profit",
+        "Add Interest on Drawings",
+        "Deduct Interest on Capital",
+        "Deduct Partner Salary",
+        "Deduct Partner Commission",
+        "Distribute remaining profit"
+      ],
+      "formula": "Divisible Profit = Net Profit + Interest on Drawings − Interest on Capital − Salary − Commission"
+    },
+
+    {
+      "id": "admission_new_partner",
+      "chapter": "Admission of Partner",
+      "keywords": [
+        "admission",
+        "new partner",
+        "admitted",
+        "new partner brings capital"
+      ],
+      "required_data": [
+        "old_ratio",
+        "new_partner_share",
+        "new_ratio"
+      ],
+      "method": [
+        "Calculate new ratio",
+        "Calculate sacrificing ratio",
+        "Adjust goodwill",
+        "Adjust reserves and accumulated profits/losses",
+        "Prepare revaluation if required"
+      ],
+      "formula": "Sacrificing Ratio = Old Ratio − New Ratio"
+    },
+
+    {
+      "id": "retirement_partner",
+      "chapter": "Retirement of Partner",
+      "keywords": [
+        "retirement",
+        "retiring partner",
+        "retired partner"
+      ],
+      "required_data": [
+        "old_ratio",
+        "new_ratio",
+        "goodwill"
+      ],
+      "method": [
+        "Calculate gaining ratio",
+        "Adjust goodwill",
+        "Adjust reserves",
+        "Prepare revaluation if required",
+        "Calculate amount payable to retiring partner"
+      ],
+      "formula": "Gaining Ratio = New Ratio − Old Ratio"
+    },
+
+    {
+      "id": "death_partner",
+      "chapter": "Death of Partner",
+      "keywords": [
+        "death of partner",
+        "deceased partner",
+        "profit till death"
+      ],
+      "required_data": [
+        "profit",
+        "period",
+        "profit_sharing_ratio"
+      ],
+      "method": [
+        "Calculate profit up to date of death",
+        "Calculate deceased partner's share",
+        "Calculate goodwill share",
+        "Prepare deceased partner's capital/current account"
+      ],
+      "formula": "Profit up to Death = Estimated Profit × Time / Total Time"
+    },
+
+    {
+      "id": "revaluation_account",
+      "chapter": "Reconstitution of Partnership",
+      "keywords": [
+        "revaluation account",
+        "increase in asset",
+        "decrease in asset",
+        "liability"
+      ],
+      "required_data": [
+        "changes_in_assets",
+        "changes_in_liabilities"
+      ],
+      "method": [
+        "Record increase/decrease in assets",
+        "Record increase/decrease in liabilities",
+        "Calculate profit or loss on revaluation",
+        "Distribute profit/loss in old ratio"
+      ],
+      "formula": "Profit/Loss on Revaluation = Credits − Debits"
+    },
+
+    {
+      "id": "dissolution_realisation",
+      "chapter": "Dissolution of Partnership Firm",
+      "keywords": [
+        "dissolution",
+        "realisation account",
+        "realization account",
+        "assets realised",
+        "liabilities paid"
+      ],
+      "required_data": [
+        "assets",
+        "liabilities",
+        "realisation_expenses"
+      ],
+      "method": [
+        "Transfer assets to Realisation Account",
+        "Transfer external liabilities",
+        "Record sale of assets",
+        "Record payment of liabilities",
+        "Record realisation expenses",
+        "Calculate profit/loss"
+      ],
+      "formula": "Realisation Profit = Credit Side − Debit Side"
+    },
+
+    {
+      "id": "dissolution_cash_distribution",
+      "chapter": "Dissolution of Partnership Firm",
+      "keywords": [
+        "distribution of cash",
+        "dissolution",
+        "partners capital",
+        "cash available"
+      ],
+      "required_data": [
+        "cash",
+        "liabilities",
+        "partners_capital"
+      ],
+      "method": [
+        "Pay external liabilities",
+        "Pay partner loans",
+        "Settle partner capital accounts",
+        "Distribute remaining cash according to entitlement"
+      ],
+      "formula": "Cash Available for Partners = Total Cash − External Liabilities − Partner Loans"
+    },
+
+    {
+      "id": "share_issue_at_par",
+      "chapter": "Share Capital",
+      "keywords": [
+        "issue of shares",
+        "shares issued at par",
+        "application",
+        "allotment",
+        "call"
+      ],
+      "required_data": [
+        "number_of_shares",
+        "amount_per_share",
+        "application_money",
+        "allotment_money",
+        "call_money"
+      ],
+      "method": [
+        "Calculate application money",
+        "Calculate allotment money",
+        "Calculate call money",
+        "Pass relevant journal entries"
+      ],
+      "formula": "Amount = Number of Shares × Amount per Share"
+    },
+
+    {
+      "id": "share_issue_at_premium",
+      "chapter": "Share Capital",
+      "keywords": [
+        "shares issued at premium",
+        "securities premium",
+        "issue price",
+        "premium"
+      ],
+      "required_data": [
+        "number_of_shares",
+        "face_value",
+        "premium"
+      ],
+      "method": [
+        "Calculate issue price",
+        "Calculate securities premium",
+        "Record application/allotment/call entries"
+      ],
+      "formula": "Issue Price = Face Value + Premium"
+    },
+
+    {
+      "id": "oversubscription_shares",
+      "chapter": "Share Capital",
+      "keywords": [
+        "oversubscription",
+        "applications received",
+        "shares allotted",
+        "pro-rata"
+      ],
+      "required_data": [
+        "shares_applied",
+        "shares_allotted",
+        "application_money"
+      ],
+      "method": [
+        "Determine excess applications",
+        "Calculate pro-rata ratio if applicable",
+        "Adjust excess application money",
+        "Record allotment"
+      ],
+      "formula": "Pro-rata Ratio = Shares Allotted : Shares Applied"
+    },
+
+    {
+      "id": "share_forfeiture",
+      "chapter": "Share Capital",
+      "keywords": [
+        "forfeiture",
+        "shares forfeited",
+        "amount unpaid",
+        "share forfeiture"
+      ],
+      "required_data": [
+        "called_up_amount",
+        "amount_received",
+        "amount_unpaid"
+      ],
+      "method": [
+        "Cancel share capital called-up",
+        "Record unpaid amount",
+        "Credit Share Forfeiture with amount received"
+      ],
+      "formula": "Forfeited Amount = Amount Already Received on Forfeited Shares"
+    },
+
+    {
+      "id": "share_reissue",
+      "chapter": "Share Capital",
+      "keywords": [
+        "reissue",
+        "forfeited shares",
+        "discount on reissue",
+        "capital reserve"
+      ],
+      "required_data": [
+        "forfeited_amount",
+        "reissue_price",
+        "face_value"
+      ],
+      "method": [
+        "Calculate discount on reissue",
+        "Use forfeited amount to cover discount",
+        "Transfer remaining profit to Capital Reserve"
+      ],
+      "formula": "Capital Reserve = Forfeited Amount relating to Reissued Shares − Discount on Reissue"
+    },
+
+    {
+      "id": "debenture_issue_at_par",
+      "chapter": "Debentures",
+      "keywords": [
+        "issue of debentures",
+        "debentures at par"
+      ],
+      "required_data": [
+        "number_of_debentures",
+        "face_value"
+      ],
+      "method": [
+        "Calculate total debenture amount",
+        "Record issue entry"
+      ],
+      "formula": "Debenture Amount = Number of Debentures × Face Value"
+    },
+
+    {
+      "id": "debenture_issue_at_premium",
+      "chapter": "Debentures",
+      "keywords": [
+        "debentures at premium",
+        "premium on issue",
+        "issue price"
+      ],
+      "required_data": [
+        "face_value",
+        "premium"
+      ],
+      "method": [
+        "Calculate issue price",
+        "Calculate premium",
+        "Record journal entry"
+      ],
+      "formula": "Issue Price = Face Value + Premium"
+    },
+
+    {
+      "id": "debenture_interest",
+      "chapter": "Debentures",
+      "keywords": [
+        "interest on debentures",
+        "debenture interest",
+        "interest due"
+      ],
+      "required_data": [
+        "face_value",
+        "interest_rate",
+        "time"
+      ],
+      "method": [
+        "Calculate annual or period interest",
+        "Record interest expense and payment"
+      ],
+      "formula": "Debenture Interest = Face Value × Rate × Time / 100"
+    },
+
+    {
+      "id": "current_ratio",
+      "chapter": "Accounting Ratios",
+      "keywords": [
+        "current ratio",
+        "current assets",
+        "current liabilities"
+      ],
+      "required_data": [
+        "current_assets",
+        "current_liabilities"
+      ],
+      "method": [
+        "Divide Current Assets by Current Liabilities"
+      ],
+      "formula": "Current Ratio = Current Assets / Current Liabilities",
+      "standard": "2:1"
+    },
+
+    {
+      "id": "quick_ratio",
+      "chapter": "Accounting Ratios",
+      "keywords": [
+        "quick ratio",
+        "liquid ratio",
+        "quick assets"
+      ],
+      "required_data": [
+        "quick_assets",
+        "current_liabilities"
+      ],
+      "method": [
+        "Calculate Quick Assets",
+        "Divide Quick Assets by Current Liabilities"
+      ],
+      "formula": "Quick Ratio = Quick Assets / Current Liabilities",
+      "standard": "1:1"
+    },
+
+    {
+      "id": "debt_equity_ratio",
+      "chapter": "Accounting Ratios",
+      "keywords": [
+        "debt equity ratio",
+        "debt-equity",
+        "long term debt"
+      ],
+      "required_data": [
+        "long_term_debt",
+        "shareholders_funds"
+      ],
+      "method": [
+        "Identify long-term debt",
+        "Identify shareholders' funds",
+        "Divide debt by equity"
+      ],
+      "formula": "Debt-Equity Ratio = Long-term Debt / Shareholders' Funds"
+    },
+
+    {
+      "id": "gross_profit_ratio",
+      "chapter": "Accounting Ratios",
+      "keywords": [
+        "gross profit ratio",
+        "gross profit",
+        "revenue"
+      ],
+      "required_data": [
+        "gross_profit",
+        "revenue"
+      ],
+      "method": [
+        "Divide Gross Profit by Revenue",
+        "Multiply by 100"
+      ],
+      "formula": "Gross Profit Ratio = Gross Profit / Revenue from Operations × 100"
+    },
+
+    {
+      "id": "net_profit_ratio",
+      "chapter": "Accounting Ratios",
+      "keywords": [
+        "net profit ratio",
+        "net profit",
+        "revenue"
+      ],
+      "required_data": [
+        "net_profit",
+        "revenue"
+      ],
+      "method": [
+        "Divide Net Profit by Revenue",
+        "Multiply by 100"
+      ],
+      "formula": "Net Profit Ratio = Net Profit / Revenue from Operations × 100"
+    },
+
+    {
+      "id": "operating_ratio",
+      "chapter": "Accounting Ratios",
+      "keywords": [
+        "operating ratio",
+        "operating expenses",
+        "cost of revenue"
+      ],
+      "required_data": [
+        "cost_of_revenue",
+        "operating_expenses",
+        "revenue"
+      ],
+      "method": [
+        "Add Cost of Revenue and Operating Expenses",
+        "Divide by Revenue",
+        "Multiply by 100"
+      ],
+      "formula": "Operating Ratio = (Cost of Revenue + Operating Expenses) / Revenue × 100"
+    },
+
+    {
+      "id": "operating_profit_ratio",
+      "chapter": "Accounting Ratios",
+      "keywords": [
+        "operating profit ratio",
+        "operating profit"
+      ],
+      "required_data": [
+        "operating_profit",
+        "revenue"
+      ],
+      "method": [
+        "Divide Operating Profit by Revenue",
+        "Multiply by 100"
+      ],
+      "formula": "Operating Profit Ratio = Operating Profit / Revenue × 100"
+    },
+
+    {
+      "id": "roi",
+      "chapter": "Accounting Ratios",
+      "keywords": [
+        "roi",
+        "return on investment",
+        "return on capital employed"
+      ],
+      "required_data": [
+        "operating_profit",
+        "capital_employed"
+      ],
+      "method": [
+        "Divide Operating Profit by Capital Employed",
+        "Multiply by 100"
+      ],
+      "formula": "ROI = Operating Profit / Capital Employed × 100"
+    },
+
+    {
+      "id": "cash_flow_operating_activities",
+      "chapter": "Cash Flow Statement",
+      "keywords": [
+        "cash from operating activities",
+        "operating activities",
+        "cash flow"
+      ],
+      "required_data": [
+        "profit_before_tax",
+        "non_cash_expenses",
+        "non_operating_items",
+        "working_capital_changes"
+      ],
+      "method": [
+        "Start with profit before tax",
+        "Add non-cash expenses",
+        "Adjust non-operating items",
+        "Adjust working capital changes",
+        "Deduct tax paid where applicable"
+      ],
+      "formula": "Cash Flow from Operating Activities = Adjusted Profit + Working Capital Adjustments − Tax Paid"
+    },
+
+    {
+      "id": "cash_flow_investing",
+      "chapter": "Cash Flow Statement",
+      "keywords": [
+        "investing activities",
+        "purchase of fixed assets",
+        "sale of fixed assets",
+        "cash flow from investing"
+      ],
+      "required_data": [
+        "purchase_of_assets",
+        "sale_of_assets",
+        "investments"
+      ],
+      "method": [
+        "Identify cash inflows from investing",
+        "Identify cash outflows from investing",
+        "Calculate net investing cash flow"
+      ],
+      "formula": "Net Investing Cash Flow = Investing Inflows − Investing Outflows"
+    },
+
+    {
+      "id": "cash_flow_financing",
+      "chapter": "Cash Flow Statement",
+      "keywords": [
+        "financing activities",
+        "issue of shares",
+        "issue of debentures",
+        "dividend",
+        "cash flow from financing"
+      ],
+      "required_data": [
+        "share_issue",
+        "debenture_issue",
+        "borrowings",
+        "repayments",
+        "dividend"
+      ],
+      "method": [
+        "Identify financing inflows",
+        "Identify financing outflows",
+        "Calculate net financing cash flow"
+      ],
+      "formula": "Net Financing Cash Flow = Financing Inflows − Financing Outflows"
+    },
+
+    {
+      "id": "net_change_cash",
+      "chapter": "Cash Flow Statement",
+      "keywords": [
+        "net change in cash",
+        "increase in cash",
+        "decrease in cash",
+        "cash and cash equivalents"
+      ],
+      "required_data": [
+        "operating_cash_flow",
+        "investing_cash_flow",
+        "financing_cash_flow"
+      ],
+      "method": [
+        "Add cash flow from operating activities",
+        "Add cash flow from investing activities",
+        "Add cash flow from financing activities"
+      ],
+      "formula": "Net Change in Cash = Operating Cash Flow + Investing Cash Flow + Financing Cash Flow"
+    },
+
+    {
+      "id": "financial_statement_profit_loss",
+      "chapter": "Financial Statements",
+      "keywords": [
+        "statement of profit and loss",
+        "profit and loss",
+        "net profit"
+      ],
+      "required_data": [
+        "revenue",
+        "expenses",
+        "other_income"
+      ],
+      "method": [
+        "Calculate revenue",
+        "Deduct expenses",
+        "Add other income",
+        "Calculate profit before tax",
+        "Deduct tax"
+      ],
+      "formula": "Profit = Total Income − Total Expenses"
+    },
+
+    {
+      "id": "balance_sheet_classification",
+      "chapter": "Financial Statements",
+      "keywords": [
+        "balance sheet",
+        "assets",
+        "liabilities",
+        "current assets",
+        "non current assets"
+      ],
+      "required_data": [
+        "assets",
+        "liabilities",
+        "equity"
+      ],
+      "method": [
+        "Classify assets",
+        "Classify liabilities",
+        "Classify equity",
+        "Prepare Balance Sheet"
+      ],
+      "formula": "Assets = Equity + Liabilities"
+    },
+
+    {
+      "id": "accounting_equation",
+      "chapter": "Basic Accounting",
+      "keywords": [
+        "accounting equation",
+        "assets",
+        "liabilities",
+        "capital"
+      ],
+      "required_data": [
+        "assets",
+        "liabilities",
+        "capital"
+      ],
+      "method": [
+        "Identify effect of every transaction",
+        "Maintain equality between both sides"
+      ],
+      "formula": "Assets = Capital + Liabilities"
+    },
+
+    {
+      "id": "journal_entry",
+      "chapter": "Basic Accounting",
+      "keywords": [
+        "journal entry",
+        "pass journal entry",
+        "record transaction"
+      ],
+      "required_data": [
+        "transaction"
+      ],
+      "method": [
+        "Identify accounts",
+        "Classify accounts",
+        "Apply debit and credit rule",
+        "Pass journal entry"
+      ],
+      "formula": "Every transaction has equal Debit and Credit"
+    },
+
+    {
+      "id": "ledger_posting",
+      "chapter": "Basic Accounting",
+      "keywords": [
+        "ledger",
+        "post into ledger",
+        "ledger account"
+      ],
+      "required_data": [
+        "journal_entries"
+      ],
+      "method": [
+        "Identify debit account",
+        "Identify credit account",
+        "Post each journal entry to respective ledger accounts"
+      ],
+      "formula": "Debit total and Credit total are compared to determine balance"
+    },
+
+    {
+      "id": "trial_balance",
+      "chapter": "Basic Accounting",
+      "keywords": [
+        "trial balance",
+        "debit balance",
+        "credit balance"
+      ],
+      "required_data": [
+        "ledger_balances"
+      ],
+      "method": [
+        "List all debit balances",
+        "List all credit balances",
+        "Total both columns",
+        "Investigate disagreement if totals differ"
+      ],
+      "formula": "Total Debit Balances = Total Credit Balances"
+    },
+
+    {
+      "id": "depreciation_straight_line",
+      "chapter": "Depreciation",
+      "keywords": [
+        "straight line method",
+        "slm",
+        "depreciation",
+        "fixed instalment"
+      ],
+      "required_data": [
+        "cost",
+        "residual_value",
+        "useful_life"
+      ],
+      "method": [
+        "Subtract residual value from cost",
+        "Divide depreciable amount by useful life"
+      ],
+      "formula": "Depreciation = (Cost − Residual Value) / Useful Life"
+    },
+
+    {
+      "id": "depreciation_written_down_value",
+      "chapter": "Depreciation",
+      "keywords": [
+        "written down value",
+        "wdv",
+        "diminishing balance",
+        "reducing balance"
+      ],
+      "required_data": [
+        "opening_book_value",
+        "rate"
+      ],
+      "method": [
+        "Calculate depreciation on opening book value",
+        "Deduct depreciation from book value",
+        "Repeat for subsequent years"
+      ],
+      "formula": "Depreciation = Opening Book Value × Rate / 100"
+    },
+
+    {
+      "id": "bank_reconciliation",
+      "chapter": "Bank Reconciliation Statement",
+      "keywords": [
+        "bank reconciliation",
+        "brs",
+        "cash book",
+        "pass book"
+      ],
+      "required_data": [
+        "cash_book_balance",
+        "timing_differences",
+        "bank_charges",
+        "direct_deposits"
+      ],
+      "method": [
+        "Start with given balance",
+        "Identify items causing difference",
+        "Apply plus/minus treatment",
+        "Calculate adjusted balance"
+      ],
+      "formula": "Adjusted Bank Balance = Starting Balance ± Reconciliation Adjustments"
+    },
+
+    {
+      "id": "rectification_error",
+      "chapter": "Rectification of Errors",
+      "keywords": [
+        "rectification",
+        "error",
+        "wrong entry",
+        "suspense account"
+      ],
+      "required_data": [
+        "incorrect_entry",
+        "correct_entry"
+      ],
+      "method": [
+        "Identify incorrect accounting treatment",
+        "Determine correct treatment",
+        "Pass rectification entry",
+        "Use Suspense Account where applicable"
+      ],
+      "formula": "Rectification Entry = Correct Treatment − Incorrect Treatment"
+    },
+
+    {
+      "id": "inventory_valuation",
+      "chapter": "Inventory",
+      "keywords": [
+        "inventory valuation",
+        "closing stock",
+        "stock valuation",
+        "cost or net realisable value"
+      ],
+      "required_data": [
+        "cost",
+        "net_realizable_value"
+      ],
+      "method": [
+        "Calculate cost",
+        "Calculate NRV",
+        "Choose lower value"
+      ],
+      "formula": "Inventory Value = Lower of Cost and Net Realisable Value"
+    },
+
+    {
+      "id": "average_cost_inventory",
+      "chapter": "Inventory",
+      "keywords": [
+        "weighted average",
+        "average cost",
+        "inventory"
+      ],
+      "required_data": [
+        "quantity",
+        "price"
+      ],
+      "method": [
+        "Calculate total quantity",
+        "Calculate total cost",
+        "Divide total cost by total quantity"
+      ],
+      "formula": "Weighted Average Price = Total Cost / Total Quantity"
+    },
+
+    {
+      "id": "gross_profit_from_sales",
+      "chapter": "Financial Statements",
+      "keywords": [
+        "gross profit",
+        "sales",
+        "cost of goods sold",
+        "cogs"
+      ],
+      "required_data": [
+        "revenue",
+        "cost_of_goods_sold"
+      ],
+      "method": [
+        "Calculate revenue",
+        "Deduct cost of goods sold"
+      ],
+      "formula": "Gross Profit = Revenue from Operations − Cost of Goods Sold"
+    },
+
+    {
+      "id": "cost_of_goods_sold",
+      "chapter": "Financial Statements",
+      "keywords": [
+        "cost of goods sold",
+        "cogs",
+        "cost of revenue"
+      ],
+      "required_data": [
+        "opening_inventory",
+        "purchases",
+        "direct_expenses",
+        "closing_inventory"
+      ],
+      "method": [
+        "Add opening inventory",
+        "Add purchases and direct expenses",
+        "Deduct closing inventory"
+      ],
+      "formula": "COGS = Opening Inventory + Net Purchases + Direct Expenses − Closing Inventory"
+    },
+
+    {
+      "id": "break_even_point",
+      "chapter": "Financial Analysis",
+      "keywords": [
+        "break even point",
+        "bep",
+        "contribution",
+        "fixed cost"
+      ],
+      "required_data": [
+        "fixed_cost",
+        "selling_price",
+        "variable_cost"
+      ],
+      "method": [
+        "Calculate contribution per unit",
+        "Divide fixed cost by contribution per unit"
+      ],
+      "formula": "BEP Units = Fixed Cost / Contribution per Unit"
+    },
+
+    {
+      "id": "contribution",
+      "chapter": "Financial Analysis",
+      "keywords": [
+        "contribution",
+        "selling price",
+        "variable cost"
+      ],
+      "required_data": [
+        "sales",
+        "variable_cost"
+      ],
+      "method": [
+        "Subtract variable cost from sales"
+      ],
+      "formula": "Contribution = Sales − Variable Cost"
+    },
+
+    {
+      "id": "profit_volume_ratio",
+      "chapter": "Financial Analysis",
+      "keywords": [
+        "p/v ratio",
+        "profit volume ratio",
+        "p v ratio"
+      ],
+      "required_data": [
+        "contribution",
+        "sales"
+      ],
+      "method": [
+        "Divide contribution by sales",
+        "Multiply by 100"
+      ],
+      "formula": "P/V Ratio = Contribution / Sales × 100"
+    }
+
+  ]
+    }
