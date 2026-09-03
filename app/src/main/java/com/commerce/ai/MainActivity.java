@@ -15,6 +15,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -128,15 +129,48 @@ public class MainActivity extends Activity {
                 )
         );
 
+        // ==============================
+        // ANSWER TEXT
+        // ==============================
+
         result = new TextView(this);
         result.setText(
                 "Your complete step-by-step solution will appear here."
         );
         result.setTextSize(16);
         result.setTextColor(Color.DKGRAY);
-        result.setPadding(10, 30, 10, 10);
+        result.setPadding(10, 30, 10, 20);
+        result.setGravity(Gravity.TOP);
+        result.setTextIsSelectable(true);
 
-        mainLayout.addView(result);
+        // ==============================
+        // SCROLLABLE ANSWER AREA
+        // ==============================
+
+        ScrollView resultScroll = new ScrollView(this);
+        resultScroll.setFillViewport(true);
+
+        resultScroll.addView(
+                result,
+                new ScrollView.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+        );
+
+        LinearLayout.LayoutParams resultScrollParams =
+                new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        0,
+                        1
+                );
+
+        resultScrollParams.setMargins(0, 15, 0, 0);
+
+        mainLayout.addView(
+                resultScroll,
+                resultScrollParams
+        );
 
         setContentView(mainLayout);
 
@@ -305,6 +339,13 @@ public class MainActivity extends Activity {
                                         + finalError
                         );
                     }
+
+                    // Answer ke start par wapas scroll
+                    resultScroll.post(() ->
+                            resultScroll.fullScroll(
+                                    ScrollView.FOCUS_UP
+                            )
+                    );
                 });
 
             } catch (Exception e) {
