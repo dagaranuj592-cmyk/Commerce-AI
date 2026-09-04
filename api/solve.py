@@ -2308,4 +2308,4 @@ Debt Equity Ratio = {format_decimal(r)} : 1
             ]
         )
 
-        if gp is not None and sales is not None
+        if gp is not None and sales is not None: 
